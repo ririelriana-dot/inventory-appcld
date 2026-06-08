@@ -3,7 +3,7 @@
 // Deploy as: Web App → Execute as Me → Anyone can access
 // ============================================================
 
-const SPREADSHEET_ID = ''; // PASTE YOUR SPREADSHEET ID HERE
+const SPREADSHEET_ID = '1V2Ufn6jG2oxuHDOy_9nCkcDekgTtNinyIG_I7FYcxRc'; // PASTE YOUR SPREADSHEET ID HERE
 const SHEET_NAMES = {
   users: 'users',
   itemNames: 'itemNames',
@@ -41,7 +41,19 @@ function handleRequest(e) {
 
   try {
     const params = e.parameter || {};
-    const postData = e.postData ? JSON.parse(e.postData.contents || '{}') : {};
+let postData = {};
+try {
+  postData = e.postData
+    ? JSON.parse(e.postData.contents || '{}')
+    : {};
+} catch(err) {
+  postData = {};
+}
+const requestData =
+  params.data
+    ? JSON.parse(params.data)
+    : postData.data || {};
+	
     const action = params.action || postData.action;
     const sheet  = params.sheet  || postData.sheet;
 
@@ -50,10 +62,15 @@ function handleRequest(e) {
     let result;
     switch (action) {
       case 'getAll':    result = getAll(sheet);               break;
-      case 'create':    result = create(sheet, postData.data); break;
-      case 'update':    result = update(sheet, postData.data); break;
-      case 'delete':    result = deleteRow(sheet, postData.id);break;
-      case 'login':     result = login(postData.username, postData.password); break;
+      case 'create':    result = create(sheet, requestData); break;
+      case 'update':    result = update(sheet, requestData); break;
+      case 'delete':    result = deleteRow(sheet, params.id || postData.id);break;
+	  case 'login':
+  result = login(
+    params.username || postData.username,
+    params.password || postData.password
+  );
+  break;
       case 'seed':      result = seedDefaults();               break;
       default:          result = { success: false, error: 'Unknown action: ' + action };
     }
@@ -114,16 +131,16 @@ function getAll(sheetName) {
   return { success: true, data: rows };
 }
 
-function create(sheetName, data) {
-  const sh = getSheet(sheetName);
-  if (!sh) return { success: false, error: 'Sheet not found: ' + sheetName };
-  const cols = COLUMNS[sheetName];
-  const id = Utilities.getUuid();
-  data.id = id;
-  const row = cols.map(c => data[c] !== undefined ? data[c] : '');
-  sh.appendRow(row);
-  return { success: true, id };
-}
+	function create(sheetName, data) {
+	  const sh = getSheet(sheetName);
+	  if (!sh) return { success: false, error: 'Sheet not found: ' + sheetName };
+	  const cols = COLUMNS[sheetName];
+	  const id = Utilities.getUuid();
+	  data.id = id;
+	  const row = cols.map(c => data[c] !== undefined ? data[c] : '');
+	  sh.appendRow(row);
+	  return { success: true, id };
+	}
 
 function update(sheetName, data) {
   const sh = getSheet(sheetName);
