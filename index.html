@@ -1,11 +1,1551 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <title>Inventory App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Manajemen Barang</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      height: 100%; margin: 0; padding: 0;
+      font-family: 'IBM Plex Sans', sans-serif;
+      background: #f0f4f8;
+    }
+
+    /* ── Config Banner ── */
+    #configBanner {
+      background: #1a1a2e; color: #e2e8f0;
+      padding: 16px 24px; font-size: 13px;
+      border-bottom: 2px solid #3498db;
+      display: none;
+    }
+    #configBanner.show { display: block; }
+    #configBanner input {
+      background: #0f3460; color: white; border: 1px solid #3498db;
+      padding: 6px 10px; border-radius: 4px; width: 100%; margin-top: 6px; font-size: 13px;
+    }
+    #configBanner button {
+      background: #3498db; color: white; border: none;
+      padding: 7px 16px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-top: 8px;
+    }
+
+    /* ── App Layout ── */
+    .app-wrapper { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .main-body   { flex: 1; display: flex; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px; background: #1e293b; color: white;
+      display: flex; flex-direction: column; flex-shrink: 0;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 20px 16px 12px;
+      font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
+      color: #94a3b8; text-transform: uppercase;
+      border-bottom: 1px solid #334155;
+    }
+    .nav-section { padding: 8px 0; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; font-size: 13px; font-weight: 500;
+      color: #94a3b8; cursor: pointer; transition: all 0.15s;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover  { color: #e2e8f0; background: #334155; }
+    .nav-item.active { color: #fff; background: #1e40af; border-left-color: #60a5fa; }
+    .nav-item svg    { width: 16px; height: 16px; flex-shrink: 0; }
+    .sidebar-footer  {
+      margin-top: auto; padding: 12px 16px;
+      border-top: 1px solid #334155; font-size: 12px; color: #64748b;
+    }
+    .sidebar-footer strong { color: #94a3b8; display: block; }
+
+    /* ── Top Bar ── */
+    .topbar {
+      background: white; padding: 12px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .topbar h1 { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; }
+    .topbar p  { font-size: 12px; color: #64748b; margin: 2px 0 0; }
+    .btn-topbar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 6px; border: none;
+      font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-topbar.grey  { background: #f1f5f9; color: #475569; }
+    .btn-topbar.grey:hover  { background: #e2e8f0; }
+    .btn-topbar.red   { background: #fee2e2; color: #dc2626; }
+    .btn-topbar.red:hover   { background: #fecaca; }
+
+    /* ── Content ── */
+    .content-area { flex: 1; overflow-y: auto; padding: 24px; }
+
+    /* ── Cards / Stats ── */
+    .stat-card {
+      border-radius: 10px; padding: 20px; color: white;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .stat-card p { margin: 0 0 4px; font-size: 12px; opacity: 0.8; }
+    .stat-card .value { font-size: 32px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; }
+    .stat-card svg { opacity: 0.25; width: 40px; height: 40px; }
+
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0; background: white; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      background: #1e293b; color: #e2e8f0;
+      padding: 11px 14px; text-align: left;
+      font-weight: 600; white-space: nowrap;
+    }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 999px; font-size: 11px; font-weight: 600;
+    }
+    .badge-pending  { background: #fef3c7; color: #92400e; }
+    .badge-approved { background: #d1fae5; color: #065f46; }
+    .badge-rejected { background: #fee2e2; color: #991b1b; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 6px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .btn-primary   { background: #1d4ed8; color: white; }
+    .btn-primary:hover   { background: #1e40af; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger    { background: #dc2626; color: white; }
+    .btn-danger:hover    { background: #b91c1c; }
+    .btn-success   { background: #059669; color: white; }
+    .btn-success:hover   { background: #047857; }
+    .btn-icon {
+      background: none; border: none; cursor: pointer;
+      padding: 4px; border-radius: 4px; display: inline-flex;
+      align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .btn-icon:hover { background: #f1f5f9; }
+    .btn-icon svg { width: 16px; height: 16px; }
+    .btn:disabled, .btn-icon:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Forms ── */
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: #374151; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .input-field, .select-field, .textarea-field {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid #d1d5db; border-radius: 6px;
+      font-size: 13px; font-family: inherit; color: #1e293b;
+      background: white; transition: border-color 0.15s;
+    }
+    .input-field:focus, .select-field:focus, .textarea-field:focus {
+      outline: none; border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+    .input-field[readonly] { background: #f8fafc; color: #64748b; }
+    .textarea-field { resize: vertical; min-height: 60px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      display: none; align-items: center; justify-content: center;
+      z-index: 500; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white; border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      width: 100%; max-height: 90vh; overflow-y: auto;
+      animation: fadeUp 0.2s ease-out;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      padding: 20px 24px; border-bottom: 1px solid #f1f5f9;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: white; z-index: 1;
+    }
+    .modal-header h2 { font-size: 16px; font-weight: 700; color: #1e293b; margin: 0; }
+    .modal-body { padding: 20px 24px; }
+    .modal-footer {
+      padding: 16px 24px; border-top: 1px solid #f1f5f9;
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    /* ── Info Box ── */
+    .info-box {
+      background: #eff6ff; border-left: 3px solid #3b82f6;
+      padding: 10px 14px; border-radius: 4px; font-size: 12px;
+      color: #1e40af; margin-bottom: 14px;
+    }
+
+    /* ── Toast ── */
+    #toastContainer { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      padding: 12px 18px; border-radius: 8px; font-size: 13px; font-weight: 500;
+      color: white; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      animation: fadeUp 0.25s ease-out;
+      max-width: 320px;
+    }
+    .toast.success { background: #059669; }
+    .toast.error   { background: #dc2626; }
+    .toast.warning { background: #d97706; }
+
+    /* ── Loading ── */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Login Screen ── */
+    #loginScreen {
+      min-height: 100vh; background: #0f172a;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      background: white; border-radius: 12px; padding: 40px;
+      width: 100%; max-width: 380px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+    }
+    .login-card h1 { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 4px; }
+    .login-card p  { font-size: 13px; color: #64748b; margin: 0 0 28px; }
+
+    /* ── Section Header ── */
+    .section-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-hdr h2 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
 </head>
 <body>
-    <h1>Inventory App</h1>
-    <p>Website berhasil di-deploy!</p>
+
+<!-- ═══ CONFIG BANNER ═══ -->
+<div id="configBanner" class="show">
+  <strong>⚙️ Konfigurasi Backend</strong> — Masukkan URL Google Apps Script Web App Anda:
+  <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+  <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+    <button onclick="saveScriptUrl()">Simpan & Muat Data</button>
+    <button onclick="seedData()" style="background:#059669;">Inisialisasi Data Default</button>
+    <button onclick="document.getElementById('configBanner').classList.remove('show')" style="background:#64748b;">Tutup</button>
+  </div>
+  <div style="margin-top:8px;font-size:11px;color:#94a3b8;">
+    💡 Belum punya script? <a href="#" onclick="showSetupGuide()" style="color:#60a5fa;">Lihat panduan setup</a>
+  </div>
+</div>
+
+<!-- ═══ SETUP GUIDE MODAL ═══ -->
+<div class="modal-overlay" id="setupGuideModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-header">
+      <h2>📋 Panduan Setup Google Sheets</h2>
+      <button class="btn-icon" onclick="closeModal('setupGuideModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" style="font-size:13px;line-height:1.8;">
+      <ol style="padding-left:20px;color:#374151;">
+        <li style="margin-bottom:12px;">Buka <a href="https://sheets.google.com" target="_blank" style="color:#1d4ed8;">Google Sheets</a> → buat spreadsheet baru → salin ID dari URL (bagian antara <code>/d/</code> dan <code>/edit</code>)</li>
+        <li style="margin-bottom:12px;">Buka <strong>Extensions → Apps Script</strong></li>
+        <li style="margin-bottom:12px;">Hapus semua kode yang ada, lalu paste seluruh isi file <code>Code.gs</code> yang diunduh bersama halaman ini</li>
+        <li style="margin-bottom:12px;">Di baris pertama file, isi <code>SPREADSHEET_ID</code> dengan ID spreadsheet Anda</li>
+        <li style="margin-bottom:12px;">Klik <strong>Deploy → New Deployment</strong> → pilih type: <strong>Web App</strong></li>
+        <li style="margin-bottom:12px;">Set: <strong>Execute as: Me</strong> dan <strong>Who has access: Anyone</strong></li>
+        <li style="margin-bottom:12px;">Klik <strong>Deploy</strong> → izinkan akses → salin URL Web App</li>
+        <li style="margin-bottom:12px;">Paste URL tersebut di kolom konfigurasi di atas, klik <strong>Simpan</strong></li>
+        <li style="margin-bottom:12px;">Klik <strong>Inisialisasi Data Default</strong> untuk membuat user & data awal</li>
+      </ol>
+      <div class="info-box" style="margin-top:8px;">
+        <strong>Login default:</strong> admin/admin123 · manager/manager123 · warehouse/warehouse123 · guest/guest123
+      </div>
+      <div style="background:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:4px;font-size:12px;color:#92400e;margin-top:8px;">
+        ⚠️ Untuk embed di Google Sites: <strong>Insert → Embed → By URL</strong> → masukkan URL halaman ini. Pastikan halaman ini di-host (mis. GitHub Pages, Netlify, atau Google Drive).
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('setupGuideModal')">Tutup</button></div>
+  </div>
+</div>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h1>Sistem Manajemen Barang</h1>
+    <p>Masuk untuk melanjutkan</p>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="loginUser" class="input-field" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPass" class="input-field" placeholder="••••••••" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="doLogin()" id="loginBtn">
+      Masuk
+    </button>
+    <div id="loginError" style="display:none;margin-top:12px;background:#fee2e2;color:#dc2626;padding:8px 12px;border-radius:6px;font-size:12px;"></div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="mainApp" style="display:none;" class="app-wrapper">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <h1>Sistem Manajemen Barang</h1>
+      <p id="topbarInfo"></p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-topbar grey" onclick="openModal('configModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Konfigurasi
+      </button>
+      <button class="btn-topbar grey" onclick="openSwitchModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l5.1 5.1"/></svg>
+        Ganti Akun
+      </button>
+      <button class="btn-topbar red" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Keluar
+      </button>
+    </div>
+  </div>
+
+  <!-- Main body: sidebar + content -->
+  <div class="main-body">
+    <div class="sidebar">
+      <div class="sidebar-logo">Menu Navigasi</div>
+      <div class="nav-section" id="navMenu"></div>
+      <div class="sidebar-footer">
+        <strong id="sidebarUser">-</strong>
+        <span id="sidebarRole" style="text-transform:capitalize;">-</span>
+      </div>
+    </div>
+
+    <div class="content-area">
+
+      <!-- ── DASHBOARD ── -->
+      <div id="tabDashboard" style="display:none;">
+        <div class="section-hdr"><h2>Dashboard</h2></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px;">
+          <div class="stat-card" style="background:linear-gradient(135deg,#1d4ed8,#2563eb);">
+            <div><p>Total Barang Masuk</p><div class="value" id="statIn">0</div></div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,#ea580c,#f97316);">
+            <div><p>Total Barang Keluar</p><div class="value" id="statOut">0</div></div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>
+          </div>
+          <div class="stat-card" style="background:linear-gradient(135deg,#059669,#10b981);">
+            <div><p>Sisa Stok</p><div class="value" id="statStock">0</div></div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+        </div>
+        <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;">
+          <h3 style="font-size:14px;font-weight:700;color:#1e293b;margin:0 0 14px;">Aktivitas Terbaru</h3>
+          <div id="activityLog" style="max-height:320px;overflow-y:auto;">
+            <p style="color:#94a3b8;text-align:center;font-size:13px;">Belum ada aktivitas</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── BARANG MASUK ── -->
+      <div id="tabIncoming" style="display:none;">
+        <div class="section-hdr">
+          <h2>Barang Masuk</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" onclick="openAddItemNameModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Tambah Nama Barang
+            </button>
+            <button class="btn btn-primary" onclick="openIncomingModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Tambah Barang Masuk
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Pemilik</th><th>Nama Barang</th><th>Kode</th><th>Lot/Batch</th><th>Qty</th><th>Satuan</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody id="incomingTBody"><tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Belum ada data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── BARANG KELUAR ── -->
+      <div id="tabOutgoing" style="display:none;">
+        <div class="section-hdr">
+          <h2>Barang Keluar</h2>
+          <button class="btn btn-primary" onclick="openOutgoingModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Barang Keluar
+          </button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tanggal Kirim</th><th>Pemilik</th><th>Nama Barang</th><th>Lot/Batch</th><th>Qty Keluar</th><th>Satuan</th><th>Status Kirim</th><th>Penerima</th><th>Approval</th><th>Aksi</th></tr></thead>
+            <tbody id="outgoingTBody"><tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Belum ada data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── DATA BARANG ── -->
+      <div id="tabInventory" style="display:none;">
+        <div class="section-hdr"><h2>Data Barang</h2></div>
+        <div class="form-group" style="max-width:320px;">
+          <label>Pilih Pemilik</label>
+          <select id="invOwnerFilter" class="select-field" onchange="renderInventory()">
+            <option value="">-- Pilih Pemilik --</option>
+            <option>PT. Rena Haniem Mulia</option>
+            <option>PT. Sumber Phoenix Makmur</option>
+            <option>PT. Monca Wijaya Makmur</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pemilik</th><th>Nama Barang</th><th>Lot/Batch</th><th>Total Masuk</th><th>Total Keluar</th><th>Satuan</th><th>Sisa Stok</th><th>Aksi</th></tr></thead>
+            <tbody id="inventoryTBody"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Pilih pemilik terlebih dahulu</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── LAPORAN ── -->
+      <div id="tabReport" style="display:none;">
+        <div class="section-hdr"><h2>Laporan</h2></div>
+        <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin-bottom:20px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px;">
+            <div class="form-group" style="margin:0;">
+              <label>Pemilik</label>
+              <select id="rptOwner" class="select-field" onchange="renderReport()">
+                <option value="">-- Semua --</option>
+                <option>PT. Rena Haniem Mulia</option>
+                <option>PT. Sumber Phoenix Makmur</option>
+                <option>PT. Monca Wijaya Makmur</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Tipe</label>
+              <select id="rptType" class="select-field" onchange="renderReport()">
+                <option value="all">Semua</option>
+                <option value="incoming">Barang Masuk</option>
+                <option value="outgoing">Barang Keluar</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Bulan</label>
+              <select id="rptMonth" class="select-field" onchange="renderReport()">
+                <option value="">-- Semua --</option>
+                <option value="1">Januari</option><option value="2">Februari</option>
+                <option value="3">Maret</option><option value="4">April</option>
+                <option value="5">Mei</option><option value="6">Juni</option>
+                <option value="7">Juli</option><option value="8">Agustus</option>
+                <option value="9">September</option><option value="10">Oktober</option>
+                <option value="11">November</option><option value="12">Desember</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label>Tahun</label>
+              <select id="rptYear" class="select-field" onchange="renderReport()">
+                <option value="">-- Semua --</option>
+                <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary" onclick="downloadCSV()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tanggal</th><th>Pemilik</th><th>Deskripsi</th><th>Qty</th><th>Satuan</th></tr></thead>
+            <tbody id="reportTBody"><tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">Pilih filter untuk melihat laporan</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PENGATURAN ── -->
+      <div id="tabSettings" style="display:none;">
+        <div class="section-hdr"><h2>Pengaturan</h2></div>
+        <div style="display:grid;gap:20px;max-width:700px;">
+          <!-- Change Password -->
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 16px;">Ubah Password User</h3>
+            <div class="grid-2">
+              <div class="form-group"><label>Pilih User</label>
+                <select id="cpUser" class="select-field"><option value="">-- Pilih --</option></select></div>
+              <div></div>
+              <div class="form-group"><label>Password Baru</label>
+                <input type="password" id="cpNew" class="input-field" placeholder="Min. 6 karakter"></div>
+              <div class="form-group"><label>Konfirmasi Password</label>
+                <input type="password" id="cpConfirm" class="input-field" placeholder="Ulangi password"></div>
+            </div>
+            <button class="btn btn-primary" onclick="changePassword()" id="cpBtn">Ubah Password</button>
+          </div>
+          <!-- Add User -->
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 16px;">Tambah User Baru</h3>
+            <div class="grid-3">
+              <div class="form-group"><label>Username</label><input type="text" id="nuUser" class="input-field" placeholder="username"></div>
+              <div class="form-group"><label>Password</label><input type="password" id="nuPass" class="input-field" placeholder="password"></div>
+              <div class="form-group"><label>Role</label>
+                <select id="nuRole" class="select-field">
+                  <option value="">-- Pilih --</option>
+                  <option value="manager">Manager</option>
+                  <option value="admin">Admin</option>
+                  <option value="warehouse">Warehouse</option>
+                  <option value="guest">Guest</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-success" onclick="addUser()" id="nuBtn">Tambah User</button>
+          </div>
+          <!-- User List -->
+          <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;">
+            <h3 style="font-size:14px;font-weight:700;margin:0 0 16px;">Daftar User</h3>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Username</th><th>Role</th><th>Status</th><th>Aksi</th></tr></thead>
+                <tbody id="userListTBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content-area -->
+  </div><!-- /main-body -->
+</div><!-- /mainApp -->
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- Config Modal -->
+<div class="modal-overlay" id="configModal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <h2>Konfigurasi Backend</h2>
+      <button class="btn-icon" onclick="closeModal('configModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Google Apps Script Web App URL</label>
+        <input type="text" id="cfgUrl" class="input-field" placeholder="https://script.google.com/macros/s/...">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('configModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveScriptUrl()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Switch Account Modal -->
+<div class="modal-overlay" id="switchModal" onclick="if(event.target===this)closeModal('switchModal')">
+  <div class="modal-box" style="max-width:360px;">
+    <div class="modal-header">
+      <h2>Ganti Akun</h2>
+      <button class="btn-icon" onclick="closeModal('switchModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Username</label><input type="text" id="swUser" class="input-field"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="swPass" class="input-field" onkeydown="if(event.key==='Enter')doSwitch()"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('switchModal')">Batal</button>
+      <button class="btn btn-primary" onclick="doSwitch()" id="swBtn">Ganti</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item Name Modal -->
+<div class="modal-overlay" id="itemNameModal" onclick="if(event.target===this)closeModal('itemNameModal')">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header"><h2>Tambah Nama Barang</h2>
+      <button class="btn-icon" onclick="closeModal('itemNameModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Pemilik</label>
+        <select id="inOwner" class="select-field">
+          <option value="">-- Pilih --</option>
+          <option>PT. Rena Haniem Mulia</option>
+          <option>PT. Sumber Phoenix Makmur</option>
+          <option>PT. Monca Wijaya Makmur</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Nama Barang</label><input type="text" id="inName" class="input-field" placeholder="Nama barang"></div>
+      <div class="form-group"><label>Kode Barang</label><input type="text" id="inCode" class="input-field" placeholder="Kode barang"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('itemNameModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveItemName()" id="inBtn">Tambah</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Incoming Modal -->
+<div class="modal-overlay" id="incomingModal" onclick="if(event.target===this)closeModal('incomingModal')">
+  <div class="modal-box" style="max-width:680px;">
+    <div class="modal-header"><h2 id="incomingModalTitle">Tambah Barang Masuk</h2>
+      <button class="btn-icon" onclick="closeModal('incomingModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="form-group"><label>Tanggal Masuk</label><input type="date" id="imDate" class="input-field"></div>
+        <div class="form-group"><label>Pemilik</label>
+          <select id="imOwner" class="select-field" onchange="loadImItemNames()">
+            <option value="">-- Pilih --</option>
+            <option>PT. Rena Haniem Mulia</option>
+            <option>PT. Sumber Phoenix Makmur</option>
+            <option>PT. Monca Wijaya Makmur</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Nama Barang</label>
+          <select id="imItemName" class="select-field" onchange="setImItemCode()"><option value="">-- Pilih --</option></select>
+        </div>
+        <div class="form-group"><label>Kode Barang</label><input type="text" id="imItemCode" class="input-field" readonly></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Lot/Batch</label><input type="text" id="imBatch" class="input-field" placeholder="BATCH-001"></div>
+        <div class="form-group"><label>Tanggal Kadaluarsa</label><input type="date" id="imExpired" class="input-field"></div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group"><label>Jumlah</label><input type="number" id="imQty" class="input-field" min="0" placeholder="0"></div>
+        <div class="form-group"><label>Satuan</label>
+          <select id="imUnit" class="select-field">
+            <option value="">-- Pilih --</option>
+            <option>kg</option><option>gr</option><option>Liter</option>
+            <option>pcs</option><option>set</option><option>unit</option>
+            <option>sheet</option><option>roll</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Kondisi</label>
+          <select id="imCond" class="select-field">
+            <option value="">-- Pilih --</option>
+            <option value="baik">Baik</option>
+            <option value="rusak">Rusak</option>
+            <option value="kadaluarsa">Kadaluarsa</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group"><label>Lokasi</label><input type="text" id="imLoc" class="input-field" placeholder="Gudang A"></div>
+        <div class="form-group"><label>Pemasok</label><input type="text" id="imSupplier" class="input-field" placeholder="Nama pemasok"></div>
+        <div class="form-group"><label>Petugas</label><input type="text" id="imOfficer" class="input-field" placeholder="Nama petugas"></div>
+      </div>
+      <div class="form-group"><label>Catatan</label><textarea id="imNotes" class="textarea-field" placeholder="Catatan tambahan..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('incomingModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveIncoming()" id="imBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Outgoing Modal -->
+<div class="modal-overlay" id="outgoingModal" onclick="if(event.target===this)closeModal('outgoingModal')">
+  <div class="modal-box" style="max-width:680px;">
+    <div class="modal-header"><h2 id="outgoingModalTitle">Tambah Barang Keluar</h2>
+      <button class="btn-icon" onclick="closeModal('outgoingModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2">
+        <div class="form-group"><label>Tanggal Kirim</label><input type="date" id="omDate" class="input-field"></div>
+        <div class="form-group"><label>Pemilik</label>
+          <select id="omOwner" class="select-field" onchange="loadOmItemNames()">
+            <option value="">-- Pilih --</option>
+            <option>PT. Rena Haniem Mulia</option>
+            <option>PT. Sumber Phoenix Makmur</option>
+            <option>PT. Monca Wijaya Makmur</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Nama Barang</label>
+          <select id="omItemName" class="select-field" onchange="loadOmBatches()"><option value="">-- Pilih --</option></select>
+        </div>
+        <div class="form-group"><label>Lot/Batch</label>
+          <select id="omBatch" class="select-field"><option value="">-- Pilih --</option></select>
+        </div>
+      </div>
+      <div id="omStockBox" style="display:none;background:#f0fdf4;border-left:3px solid #059669;padding:10px 14px;border-radius:4px;margin-bottom:14px;font-size:12px;color:#065f46;"></div>
+      <div class="grid-3">
+        <div class="form-group"><label>No. Surat Jalan</label><input type="text" id="omDelivNo" class="input-field"></div>
+        <div class="form-group"><label>No. PO</label><input type="text" id="omPONo" class="input-field"></div>
+        <div class="form-group"><label>Satuan</label><input type="text" id="omUnit" class="input-field" readonly></div>
+      </div>
+      <div class="grid-3">
+        <div class="form-group"><label>Jumlah Keluar</label><input type="number" id="omQty" class="input-field" min="0" placeholder="0"></div>
+        <div class="form-group"><label>Status Kirim</label>
+          <select id="omStatus" class="select-field">
+            <option value="">-- Pilih --</option>
+            <option value="ditunda">Ditunda</option>
+            <option value="dikirim">Dikirim</option>
+            <option value="diterima">Diterima</option>
+            <option value="dikembalikan">Dikembalikan</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Tujuan/Penerima</label><input type="text" id="omDest" class="input-field" placeholder="Nama tujuan"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Petugas Pengirim</label><input type="text" id="omOfficer" class="input-field"></div>
+        <div class="form-group"><label>Nama Sales</label><input type="text" id="omSales" class="input-field"></div>
+      </div>
+      <div class="form-group"><label>Catatan</label><textarea id="omNotes" class="textarea-field"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('outgoingModal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveOutgoing()" id="omBtn">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Item Modal -->
+<div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal('detailModal')">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-header"><h2>Detail Barang</h2>
+      <button class="btn-icon" onclick="closeModal('detailModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="detailContent"></div>
+    <div class="modal-footer"><button class="btn btn-secondary" onclick="closeModal('detailModal')">Tutup</button></div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal('confirmModal')">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-header"><h2 id="confirmTitle">Konfirmasi</h2>
+      <button class="btn-icon" onclick="closeModal('confirmModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body" id="confirmMsg" style="font-size:14px;color:#374151;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirmModal')">Batal</button>
+      <button class="btn btn-danger" id="confirmOkBtn">Konfirmasi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+
+<!-- ═══ SCRIPT ═══ -->
+<script>
+// ── Config ───────────────────────────────────────────────────
+const SCRIPT_URL_KEY = 'smb_script_url';
+let SCRIPT_URL = localStorage.getItem(SCRIPT_URL_KEY) || '';
+
+function saveScriptUrl() {
+  const url = (document.getElementById('scriptUrlInput') || document.getElementById('cfgUrl')).value.trim();
+  if (!url) { toast('Masukkan URL script', 'warning'); return; }
+  SCRIPT_URL = url;
+  localStorage.setItem(SCRIPT_URL_KEY, url);
+  document.getElementById('configBanner').classList.remove('show');
+  closeModal('configModal');
+  toast('URL disimpan. Memuat data...', 'success');
+  loadAllData();
+}
+
+function showSetupGuide() { openModal('setupGuideModal'); }
+
+// ── API ───────────────────────────────────────────────────────
+async function api(action, sheet, data = {}) {
+  if (!SCRIPT_URL) throw new Error('Script URL belum dikonfigurasi');
+  const url = `${SCRIPT_URL}?action=${action}&sheet=${sheet}`;
+  const isGet = (action === 'getAll' || action === 'login' || action === 'seed');
+  let fetchUrl = url, opts = { method: 'GET' };
+if (!isGet) {
+
+  const body =
+    'action=' + encodeURIComponent(action) +
+    '&sheet=' + encodeURIComponent(sheet) +
+    '&data=' + encodeURIComponent(JSON.stringify(data));
+
+  opts = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body
+  };
+
+  fetchUrl = SCRIPT_URL;
+}
+  if (action === 'login') {
+
+  fetchUrl =
+    SCRIPT_URL +
+    '?action=login' +
+    '&username=' + encodeURIComponent(data.username) +
+    '&password=' + encodeURIComponent(data.password);
+
+  opts = {
+    method: 'GET'
+  };
+
+} else if (action === 'seed') {
+
+  fetchUrl = SCRIPT_URL + '?action=seed';
+
+  opts = {
+    method: 'GET'
+  };
+
+}
+  const res = await fetch(fetchUrl, opts);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error || 'API error');
+  return json;
+}
+
+// ── State ─────────────────────────────────────────────────────
+let DB = { users: [], itemNames: [], incomingGoods: [], outgoingGoods: [] };
+let currentUser = null;
+let activityLog = [];
+let editingIncomingId = null;
+let editingOutgoingId = null;
+
+// ── Load All Data ─────────────────────────────────────────────
+async function loadAllData() {
+  if (!SCRIPT_URL) return;
+  try {
+    const [u, i, inc, out] = await Promise.all([
+      api('getAll', 'users'),
+      api('getAll', 'itemNames'),
+      api('getAll', 'incomingGoods'),
+      api('getAll', 'outgoingGoods')
+    ]);
+    DB.users        = u.data   || [];
+    DB.itemNames    = i.data   || [];
+    DB.incomingGoods = inc.data || [];
+    DB.outgoingGoods = out.data || [];
+    refreshCurrentView();
+  } catch (e) {
+    toast('Gagal memuat data: ' + e.message, 'error');
+  }
+}
+
+async function seedData() {
+  if (!SCRIPT_URL) { toast('Konfigurasi URL terlebih dahulu', 'warning'); return; }
+  try {
+    const r = await api('seed', '', {});
+    toast(r.message || 'Data default berhasil dibuat', 'success');
+    loadAllData();
+  } catch(e) { toast('Gagal seed: ' + e.message, 'error'); }
+}
+
+// ── Auth ──────────────────────────────────────────────────────
+async function doLogin() {
+  const username = document.getElementById('loginUser').value.trim();
+  const password = document.getElementById('loginPass').value;
+  if (!username || !password) { showLoginError('Isi username dan password'); return; }
+  const btn = document.getElementById('loginBtn');
+  setLoading(btn, true);
+  try {
+    let user = null;
+    if (SCRIPT_URL) {
+      const r = await api('login', '', { username, password });
+      user = r.user;
+    } else {
+      // Fallback demo login when no backend configured
+      const demo = [
+        { username:'admin',password:'admin123',role:'admin' },
+        { username:'manager',password:'manager123',role:'manager' },
+        { username:'warehouse',password:'warehouse123',role:'warehouse' },
+        { username:'guest',password:'guest123',role:'guest' }
+      ];
+      user = demo.find(u => u.username===username && u.password===password);
+    }
+    if (user) {
+      currentUser = user;
+      showApp();
+    } else {
+      showLoginError('Username atau password salah');
+    }
+  } catch(e) {
+    showLoginError('Login gagal: ' + e.message);
+  }
+  setLoading(btn, false);
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('topbarInfo').textContent = currentUser.username + ' · ' + currentUser.role;
+  document.getElementById('sidebarUser').textContent = currentUser.username;
+  document.getElementById('sidebarRole').textContent = currentUser.role;
+  buildNav();
+  if (SCRIPT_URL) loadAllData();
+  switchTab('dashboard');
+}
+
+function showLoginError(msg) {
+  const el = document.getElementById('loginError');
+  el.style.display = 'block';
+  el.textContent = msg;
+}
+
+async function doSwitch() {
+  const u = document.getElementById('swUser').value.trim();
+  const p = document.getElementById('swPass').value;
+  if (!u || !p) { toast('Isi semua field', 'warning'); return; }
+  const btn = document.getElementById('swBtn');
+  setLoading(btn, true);
+  try {
+    let user = null;
+    if (SCRIPT_URL) {
+      const r = await api('login', '', { username: u, password: p });
+      user = r.user;
+    } else {
+      const demo = [{username:'admin',password:'admin123',role:'admin'},{username:'manager',password:'manager123',role:'manager'},{username:'warehouse',password:'warehouse123',role:'warehouse'},{username:'guest',password:'guest123',role:'guest'}];
+      user = demo.find(d => d.username===u && d.password===p);
+    }
+    if (user) {
+      currentUser = user;
+      document.getElementById('topbarInfo').textContent = user.username + ' · ' + user.role;
+      document.getElementById('sidebarUser').textContent = user.username;
+      document.getElementById('sidebarRole').textContent = user.role;
+      buildNav(); closeModal('switchModal');
+      toast('Berhasil ganti ke ' + user.username, 'success');
+      addActivity('Ganti Akun', `Login sebagai ${user.username} (${user.role})`);
+    } else { toast('Username atau password salah', 'error'); }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+// ── Navigation ────────────────────────────────────────────────
+const MENUS = [
+  { id:'dashboard',  label:'Dashboard',      icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>' },
+  { id:'incoming',   label:'Barang Masuk',   icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>' },
+  { id:'outgoing',   label:'Barang Keluar',  icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="16 12 12 8 8 12"/><line x1="12" y1="16" x2="12" y2="8"/></svg>' },
+  { id:'inventory',  label:'Data Barang',    icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>' },
+  { id:'report',     label:'Laporan',        icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>' },
+  { id:'settings',   label:'Pengaturan',     icon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06-.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' }
+];
+const PERMS = { manager:['dashboard','incoming','outgoing','inventory','report','settings'], admin:['dashboard','incoming','outgoing','inventory','report'], warehouse:['dashboard','incoming','outgoing','inventory','report'], guest:['report'] };
+
+function buildNav() {
+  const menu = document.getElementById('navMenu');
+  const allowed = PERMS[currentUser.role] || [];
+  menu.innerHTML = MENUS.filter(m => allowed.includes(m.id)).map(m =>
+    `<div class="nav-item" id="nav_${m.id}" onclick="switchTab('${m.id}')">${m.icon}${m.label}</div>`
+  ).join('');
+}
+
+const TAB_MAP = { dashboard:'tabDashboard', incoming:'tabIncoming', outgoing:'tabOutgoing', inventory:'tabInventory', report:'tabReport', settings:'tabSettings' };
+let currentTab = '';
+
+function switchTab(id) {
+  if (!PERMS[currentUser?.role]?.includes(id)) id = PERMS[currentUser?.role]?.[0] || 'dashboard';
+  Object.values(TAB_MAP).forEach(t => document.getElementById(t).style.display = 'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(TAB_MAP[id]).style.display = 'block';
+  const navEl = document.getElementById('nav_' + id);
+  if (navEl) navEl.classList.add('active');
+  currentTab = id;
+  refreshTab(id);
+}
+
+function refreshCurrentView() { if (currentTab) refreshTab(currentTab); }
+
+function refreshTab(id) {
+  if (id === 'dashboard') renderDashboard();
+  else if (id === 'incoming') renderIncoming();
+  else if (id === 'outgoing') renderOutgoing();
+  else if (id === 'inventory') renderInventory();
+  else if (id === 'report') renderReport();
+  else if (id === 'settings') renderSettings();
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+function renderDashboard() {
+  const approvedIn = DB.incomingGoods.filter(i => i.status === 'approved');
+  const totalIn    = approvedIn.reduce((s,i) => s + (+i.quantity||0), 0);
+  const totalOut   = DB.outgoingGoods.reduce((s,o) => s + (+o.quantityOut||0), 0);
+  document.getElementById('statIn').textContent    = totalIn;
+  document.getElementById('statOut').textContent   = totalOut;
+  document.getElementById('statStock').textContent = totalIn - totalOut;
+  const logEl = document.getElementById('activityLog');
+  if (!activityLog.length) { logEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-size:13px;">Belum ada aktivitas</p>'; return; }
+  logEl.innerHTML = activityLog.slice(0,30).map(a => `
+    <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f1f5f9;">
+      <div style="width:8px;height:8px;background:#3b82f6;border-radius:50%;margin-top:5px;flex-shrink:0;"></div>
+      <div>
+        <div style="font-weight:600;font-size:13px;color:#1e293b;">${a.action}</div>
+        <div style="font-size:12px;color:#64748b;margin-top:2px;">${a.details}</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${a.user} · ${a.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function addActivity(action, details) {
+  activityLog.unshift({ action, details, user: currentUser.username, time: new Date().toLocaleTimeString('id-ID') });
+  if (activityLog.length > 50) activityLog.pop();
+  if (currentTab === 'dashboard') renderDashboard();
+}
+
+// ── Incoming ──────────────────────────────────────────────────
+function renderIncoming() {
+  const tbody = document.getElementById('incomingTBody');
+  let rows = DB.incomingGoods;
+  if (currentUser.role === 'warehouse') rows = rows.filter(i => i.status === 'approved' || (i.status === 'pending' && i.createdBy === currentUser.username));
+  rows = [...rows].sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Belum ada data</td></tr>'; return; }
+  tbody.innerHTML = rows.map(item => {
+    const canApprove = item.status === 'pending' && ['admin','manager'].includes(currentUser.role);
+    const canEdit    = ['admin','manager'].includes(currentUser.role) || (item.status === 'pending' && item.createdBy === currentUser.username);
+    const canDelete  = ['admin','manager'].includes(currentUser.role);
+    const badge = item.status === 'pending' ? '<span class="badge badge-pending">Menunggu</span>' : '<span class="badge badge-approved">Disetujui</span>';
+    return `<tr>
+      <td>${fmtDate(item.date)}</td><td style="font-size:12px;">${item.owner}</td>
+      <td>${item.itemName}</td><td style="font-family:monospace;font-size:12px;">${item.itemCode||'-'}</td>
+      <td>${item.batchLot||'-'}</td><td>${item.quantity}</td><td>${item.unit}</td>
+      <td>${badge}${item.approvedBy?`<br><small style="color:#64748b;font-size:10px;">oleh ${item.approvedBy}</small>`:''}</td>
+      <td style="white-space:nowrap;">
+        ${canEdit ? `<button class="btn-icon" title="Edit" onclick="editIncoming('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="width:15px;height:15px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+        ${canApprove ? `<button class="btn-icon" title="Setujui" onclick="approveIncoming('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" style="width:15px;height:15px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></button>` : ''}
+        ${canDelete ? `<button class="btn-icon" title="Hapus" onclick="confirmAction('Hapus data barang masuk ini?','danger',()=>deleteIncoming('${item.id}'))"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:15px;height:15px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openIncomingModal(id = null) {
+  editingIncomingId = id;
+  document.getElementById('incomingModalTitle').textContent = id ? 'Edit Barang Masuk' : 'Tambah Barang Masuk';
+  document.getElementById('imBtn').textContent = id ? 'Perbarui' : 'Simpan';
+  const today = new Date().toISOString().split('T')[0];
+  if (!id) {
+    document.getElementById('imDate').value = today;
+    document.getElementById('imOwner').value = '';
+    document.getElementById('imItemName').innerHTML = '<option value="">-- Pilih --</option>';
+    document.getElementById('imItemCode').value = '';
+    document.getElementById('imBatch').value = '';
+    document.getElementById('imExpired').value = '';
+    document.getElementById('imQty').value = '';
+    document.getElementById('imUnit').value = '';
+    document.getElementById('imCond').value = '';
+    document.getElementById('imLoc').value = '';
+    document.getElementById('imSupplier').value = '';
+    document.getElementById('imOfficer').value = '';
+    document.getElementById('imNotes').value = '';
+  } else {
+    const item = DB.incomingGoods.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('imDate').value    = item.date || today;
+    document.getElementById('imOwner').value   = item.owner || '';
+    loadImItemNames();
+    setTimeout(() => {
+      document.getElementById('imItemName').value = item.itemName || '';
+      document.getElementById('imItemCode').value = item.itemCode || '';
+    }, 50);
+    document.getElementById('imBatch').value    = item.batchLot || '';
+    document.getElementById('imExpired').value  = item.expiredDate || '';
+    document.getElementById('imQty').value      = item.quantity || '';
+    document.getElementById('imUnit').value     = item.unit || '';
+    document.getElementById('imCond').value     = item.condition || '';
+    document.getElementById('imLoc').value      = item.location || '';
+    document.getElementById('imSupplier').value = item.supplier || '';
+    document.getElementById('imOfficer').value  = item.officer || '';
+    document.getElementById('imNotes').value    = item.notes || '';
+  }
+  openModal('incomingModal');
+}
+
+function editIncoming(id) { openIncomingModal(id); }
+
+function loadImItemNames() {
+  const owner = document.getElementById('imOwner').value;
+  const items = DB.itemNames.filter(i => i.owner === owner);
+  document.getElementById('imItemName').innerHTML = '<option value="">-- Pilih Nama Barang --</option>' +
+    items.map(i => `<option value="${i.itemName}" data-code="${i.itemCode}">${i.itemName}</option>`).join('');
+  document.getElementById('imItemCode').value = '';
+}
+
+function setImItemCode() {
+  const sel = document.getElementById('imItemName');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('imItemCode').value = opt.dataset.code || '';
+}
+
+async function saveIncoming() {
+  const btn = document.getElementById('imBtn');
+  const date     = document.getElementById('imDate').value;
+  const owner    = document.getElementById('imOwner').value;
+  const itemName = document.getElementById('imItemName').value;
+  const itemCode = document.getElementById('imItemCode').value;
+  const batchLot = document.getElementById('imBatch').value;
+  const expiredDate = document.getElementById('imExpired').value;
+  const quantity = +document.getElementById('imQty').value;
+  const unit     = document.getElementById('imUnit').value;
+  const condition= document.getElementById('imCond').value;
+  const location = document.getElementById('imLoc').value;
+  const supplier = document.getElementById('imSupplier').value;
+  const officer  = document.getElementById('imOfficer').value;
+  const notes    = document.getElementById('imNotes').value;
+  if (!date||!owner||!itemName||!quantity||!unit||!condition) { toast('Isi semua field yang wajib', 'warning'); return; }
+  setLoading(btn, true);
+  try {
+    if (editingIncomingId) {
+      const existing = DB.incomingGoods.find(i => i.id === editingIncomingId);
+      const updated = { ...existing, date, owner, itemName, itemCode, batchLot, expiredDate, quantity, unit, condition, location, supplier, officer, notes, updatedAt: now(), updatedBy: currentUser.username };
+      await api('update', 'incomingGoods', { data: updated });
+      const idx = DB.incomingGoods.findIndex(i => i.id === editingIncomingId);
+      if (idx !== -1) DB.incomingGoods[idx] = updated;
+      toast('Data berhasil diperbarui', 'success');
+      addActivity('Update Barang Masuk', `${itemName} qty:${quantity}`);
+    } else {
+      const status = currentUser.role === 'warehouse' ? 'pending' : 'approved';
+      const r = await api('create', 'incomingGoods', { date, owner, itemName, itemCode, batchLot, expiredDate, quantity, unit, condition, location, supplier, officer, notes, status, createdAt: now(), createdBy: currentUser.username } );
+      DB.incomingGoods.push({ id: r.id, date, owner, itemName, itemCode, batchLot, expiredDate, quantity, unit, condition, location, supplier, officer, notes, status, createdAt: now(), createdBy: currentUser.username });
+      toast(status==='pending' ? 'Data tersimpan, menunggu persetujuan' : 'Barang masuk berhasil ditambahkan', 'success');
+      addActivity('Tambah Barang Masuk', `${itemName} qty:${quantity}`);
+    }
+    closeModal('incomingModal');
+    renderIncoming();
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+async function approveIncoming(id) {
+  const item = DB.incomingGoods.find(i => i.id === id);
+  if (!item || item.status === 'approved') { toast('Data sudah disetujui', 'warning'); return; }
+  confirmAction(`Setujui barang masuk: ${item.itemName} (${item.quantity} ${item.unit})?`, 'success', async () => {
+    try {
+      const updated = { ...item, status: 'approved', approvedBy: currentUser.username, approvedAt: now() };
+      await api('update', 'incomingGoods', { data: updated });
+      const idx = DB.incomingGoods.findIndex(i => i.id === id);
+      if (idx !== -1) DB.incomingGoods[idx] = updated;
+      toast('Barang masuk disetujui', 'success');
+      addActivity('Setujui Barang Masuk', `${item.itemName} oleh ${currentUser.username}`);
+      renderIncoming();
+    } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  });
+}
+
+async function deleteIncoming(id) {
+  try {
+    await api('delete', 'incomingGoods', { id });
+    DB.incomingGoods = DB.incomingGoods.filter(i => i.id !== id);
+    toast('Data barang masuk dihapus', 'success');
+    renderIncoming();
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+}
+
+// ── Outgoing ──────────────────────────────────────────────────
+function renderOutgoing() {
+  const tbody = document.getElementById('outgoingTBody');
+  const rows = [...DB.outgoingGoods].sort((a,b) => new Date(b.shipmentDate||0) - new Date(a.shipmentDate||0));
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Belum ada data</td></tr>'; return; }
+  tbody.innerHTML = rows.map(item => {
+    const canEdit   = ['warehouse','admin','manager'].includes(currentUser.role) && (currentUser.role !== 'warehouse' || item.createdBy === currentUser.username);
+    const canDelete = ['admin','manager'].includes(currentUser.role);
+    const badge = item.status === 'pending' ? '<span class="badge badge-pending">Menunggu</span>' : '<span class="badge badge-approved">Disetujui</span>';
+    return `<tr>
+      <td>${fmtDate(item.shipmentDate)}</td><td style="font-size:12px;">${item.owner}</td>
+      <td>${item.itemName}</td><td>${item.batchLot||'-'}</td>
+      <td>${item.quantityOut}</td><td>${item.unit}</td>
+      <td><span style="padding:2px 8px;background:#f1f5f9;border-radius:4px;font-size:11px;">${item.shipmentStatus||'-'}</span></td>
+      <td>${item.destination||'-'}</td><td>${badge}</td>
+      <td style="white-space:nowrap;">
+        ${canEdit ? `<button class="btn-icon" title="Edit" onclick="editOutgoing('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="width:15px;height:15px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+        ${canDelete ? `<button class="btn-icon" title="Hapus" onclick="confirmAction('Hapus data barang keluar ini?','danger',()=>deleteOutgoing('${item.id}'))"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:15px;height:15px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openOutgoingModal(id = null) {
+  editingOutgoingId = id;
+  document.getElementById('outgoingModalTitle').textContent = id ? 'Edit Barang Keluar' : 'Tambah Barang Keluar';
+  document.getElementById('omBtn').textContent = id ? 'Perbarui' : 'Simpan';
+  const today = new Date().toISOString().split('T')[0];
+  if (!id) {
+    document.getElementById('omDate').value = today;
+    ['omOwner','omItemName','omBatch','omStatus'].forEach(f => document.getElementById(f).value = '');
+    ['omDelivNo','omPONo','omUnit','omQty','omDest','omOfficer','omSales','omNotes'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('omItemName').innerHTML = '<option value="">-- Pilih --</option>';
+    document.getElementById('omBatch').innerHTML = '<option value="">-- Pilih --</option>';
+    document.getElementById('omStockBox').style.display = 'none';
+  } else {
+    const item = DB.outgoingGoods.find(i => i.id === id);
+    if (!item) return;
+    document.getElementById('omDate').value    = item.shipmentDate || today;
+    document.getElementById('omOwner').value   = item.owner || '';
+    loadOmItemNames();
+    setTimeout(() => {
+      document.getElementById('omItemName').value = item.itemName || '';
+      loadOmBatches();
+      setTimeout(() => { document.getElementById('omBatch').value = item.batchLot || ''; }, 50);
+    }, 50);
+    document.getElementById('omDelivNo').value = item.deliveryNo || '';
+    document.getElementById('omPONo').value    = item.poNo || '';
+    document.getElementById('omQty').value     = item.quantityOut || '';
+    document.getElementById('omUnit').value    = item.unit || '';
+    document.getElementById('omStatus').value  = item.shipmentStatus || '';
+    document.getElementById('omDest').value    = item.destination || '';
+    document.getElementById('omOfficer').value = item.sendingOfficer || '';
+    document.getElementById('omSales').value   = item.salesName || '';
+    document.getElementById('omNotes').value   = item.notes || '';
+  }
+  openModal('outgoingModal');
+}
+
+function editOutgoing(id) { openOutgoingModal(id); }
+
+function loadOmItemNames() {
+  const owner = document.getElementById('omOwner').value;
+  const names = [...new Set(DB.incomingGoods.filter(i => i.owner === owner && i.status === 'approved').map(i => i.itemName))];
+  document.getElementById('omItemName').innerHTML = '<option value="">-- Pilih --</option>' +
+    names.map(n => `<option value="${n}">${n}</option>`).join('');
+  document.getElementById('omBatch').innerHTML = '<option value="">-- Pilih --</option>';
+  document.getElementById('omStockBox').style.display = 'none';
+}
+
+function loadOmBatches() {
+  const owner = document.getElementById('omOwner').value;
+  const name  = document.getElementById('omItemName').value;
+  if (!name) return;
+  const batches = [...new Set(DB.incomingGoods.filter(i => i.owner === owner && i.itemName === name && i.status === 'approved').map(i => i.batchLot).filter(Boolean))];
+  document.getElementById('omBatch').innerHTML = '<option value="">-- Pilih --</option>' +
+    batches.map(b => `<option value="${b}">${b}</option>`).join('');
+  // Set unit
+  const first = DB.incomingGoods.find(i => i.owner === owner && i.itemName === name && i.status === 'approved');
+  if (first) document.getElementById('omUnit').value = first.unit || '';
+  // Stock info
+  const totalIn  = DB.incomingGoods.filter(i => i.owner===owner && i.itemName===name && i.status==='approved').reduce((s,i) => s+(+i.quantity||0), 0);
+  const totalOut = DB.outgoingGoods.filter(o => o.owner===owner && o.itemName===name && o.id !== editingOutgoingId).reduce((s,o) => s+(+o.quantityOut||0), 0);
+  const avail = totalIn - totalOut;
+  const box = document.getElementById('omStockBox');
+  box.style.display = 'block';
+  box.innerHTML = `<strong>Stok Masuk:</strong> ${totalIn} &nbsp;|&nbsp; <strong>Stok Keluar:</strong> ${totalOut} &nbsp;|&nbsp; <strong>Tersedia:</strong> <span style="font-weight:700;color:#065f46;">${avail} ${first?.unit||''}</span>`;
+}
+
+async function saveOutgoing() {
+  const btn = document.getElementById('omBtn');
+  const shipmentDate    = document.getElementById('omDate').value;
+  const owner           = document.getElementById('omOwner').value;
+  const itemName        = document.getElementById('omItemName').value;
+  const batchLot        = document.getElementById('omBatch').value;
+  const deliveryNo      = document.getElementById('omDelivNo').value;
+  const poNo            = document.getElementById('omPONo').value;
+  const quantityOut     = +document.getElementById('omQty').value;
+  const unit            = document.getElementById('omUnit').value;
+  const shipmentStatus  = document.getElementById('omStatus').value;
+  const destination     = document.getElementById('omDest').value;
+  const sendingOfficer  = document.getElementById('omOfficer').value;
+  const salesName       = document.getElementById('omSales').value;
+  const notes           = document.getElementById('omNotes').value;
+  if (!shipmentDate||!owner||!itemName||!quantityOut||!shipmentStatus) { toast('Isi semua field yang wajib', 'warning'); return; }
+  // Stock check
+  const totalIn  = DB.incomingGoods.filter(i => i.owner===owner && i.itemName===itemName && i.status==='approved').reduce((s,i) => s+(+i.quantity||0),0);
+  const totalOut = DB.outgoingGoods.filter(o => o.owner===owner && o.itemName===itemName && o.id!==editingOutgoingId).reduce((s,o) => s+(+o.quantityOut||0),0);
+  if (quantityOut > (totalIn - totalOut)) { toast(`Stok tidak cukup. Tersedia: ${totalIn-totalOut}`, 'error'); return; }
+  setLoading(btn, true);
+  try {
+    const status = currentUser.role === 'warehouse' ? 'pending' : 'approved';
+    if (editingOutgoingId) {
+      const existing = DB.outgoingGoods.find(i => i.id === editingOutgoingId);
+      const updated = { ...existing, shipmentDate, owner, itemName, batchLot, deliveryNo, poNo, quantityOut, unit, shipmentStatus, destination, sendingOfficer, salesName, notes, status, updatedAt: now(), updatedBy: currentUser.username };
+      await api('update', 'outgoingGoods', { data: updated });
+      const idx = DB.outgoingGoods.findIndex(i => i.id === editingOutgoingId);
+      if (idx !== -1) DB.outgoingGoods[idx] = updated;
+      toast('Data berhasil diperbarui', 'success');
+    } else {
+      const r = await api('create', 'outgoingGoods', { shipmentDate, owner, itemName, batchLot, deliveryNo, poNo, quantityOut, unit, shipmentStatus, destination, sendingOfficer, salesName, notes, status, createdAt: now(), createdBy: currentUser.username } );
+      DB.outgoingGoods.push({ id: r.id, shipmentDate, owner, itemName, batchLot, deliveryNo, poNo, quantityOut, unit, shipmentStatus, destination, sendingOfficer, salesName, notes, status, createdAt: now(), createdBy: currentUser.username });
+      toast(status==='pending' ? 'Tersimpan, menunggu persetujuan' : 'Barang keluar ditambahkan', 'success');
+    }
+    addActivity('Tambah Barang Keluar', `${itemName} qty:${quantityOut}`);
+    closeModal('outgoingModal');
+    renderOutgoing();
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+async function deleteOutgoing(id) {
+  try {
+    await api('delete', 'outgoingGoods', { id });
+    DB.outgoingGoods = DB.outgoingGoods.filter(i => i.id !== id);
+    toast('Data barang keluar dihapus', 'success');
+    renderOutgoing();
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+}
+
+// ── Item Names ────────────────────────────────────────────────
+function openAddItemNameModal() {
+  document.getElementById('inOwner').value = '';
+  document.getElementById('inName').value  = '';
+  document.getElementById('inCode').value  = '';
+  openModal('itemNameModal');
+}
+
+async function saveItemName() {
+  const btn   = document.getElementById('inBtn');
+  const owner = document.getElementById('inOwner').value;
+  const name  = document.getElementById('inName').value.trim();
+  const code  = document.getElementById('inCode').value.trim();
+  if (!owner||!name||!code) { toast('Isi semua field', 'warning'); return; }
+  setLoading(btn, true);
+  try {
+    const r = await api('create', 'itemNames', { owner, itemName: name, itemCode: code, createdAt: now(), createdBy: currentUser.username });
+    DB.itemNames.push({ id: r.id, owner, itemName: name, itemCode: code });
+    toast('Nama barang ditambahkan', 'success');
+    closeModal('itemNameModal');
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+// ── Inventory ─────────────────────────────────────────────────
+function renderInventory() {
+  const owner = document.getElementById('invOwnerFilter').value;
+  const tbody = document.getElementById('inventoryTBody');
+  if (!owner) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Pilih pemilik terlebih dahulu</td></tr>'; return; }
+  const grouped = {};
+  DB.incomingGoods.filter(i => i.owner === owner).forEach(i => {
+    const k = `${i.itemName}||${i.batchLot}`;
+    if (!grouped[k]) grouped[k] = { owner, itemName: i.itemName, batchLot: i.batchLot, totalIn: 0, totalOut: 0, unit: i.unit };
+    grouped[k].totalIn += +i.quantity||0;
+  });
+  DB.outgoingGoods.filter(o => o.owner === owner).forEach(o => {
+    const k = `${o.itemName}||${o.batchLot}`;
+    if (grouped[k]) grouped[k].totalOut += +o.quantityOut||0;
+  });
+  const entries = Object.values(grouped);
+  if (!entries.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Tidak ada data</td></tr>'; return; }
+  tbody.innerHTML = entries.map(g => {
+    const sisa = g.totalIn - g.totalOut;
+    const color = sisa <= 0 ? '#dc2626' : sisa < 10 ? '#f59e0b' : '#059669';
+    return `<tr>
+      <td style="font-size:12px;">${g.owner}</td><td>${g.itemName}</td><td>${g.batchLot||'-'}</td>
+      <td>${g.totalIn}</td><td>${g.totalOut}</td><td>${g.unit}</td>
+      <td style="font-weight:700;color:${color};">${sisa}</td>
+      <td><button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;" onclick="showDetail('${g.owner}','${g.itemName}','${g.batchLot}')">Detail</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function showDetail(owner, itemName, batchLot) {
+  const inc = DB.incomingGoods.filter(i => i.owner===owner && i.itemName===itemName && i.batchLot===batchLot);
+  const out = DB.outgoingGoods.filter(o => o.owner===owner && o.itemName===itemName && o.batchLot===batchLot);
+  const totalIn = inc.reduce((s,i) => s+(+i.quantity||0),0);
+  const totalOut = out.reduce((s,o) => s+(+o.quantityOut||0),0);
+  document.getElementById('detailContent').innerHTML = `
+    <div style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#1d4ed8;font-weight:600;">MASUK</div><div style="font-size:22px;font-weight:700;color:#1d4ed8;">${totalIn}</div></div>
+      <div style="background:#fff7ed;padding:12px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#ea580c;font-weight:600;">KELUAR</div><div style="font-size:22px;font-weight:700;color:#ea580c;">${totalOut}</div></div>
+      <div style="background:#f0fdf4;padding:12px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#059669;font-weight:600;">SISA</div><div style="font-size:22px;font-weight:700;color:#059669;">${totalIn-totalOut}</div></div>
+    </div>
+    <h4 style="font-size:13px;font-weight:700;margin:0 0 8px;">Riwayat Masuk</h4>
+    ${inc.length ? `<div class="table-wrap" style="margin-bottom:16px;"><table><thead><tr><th>Tanggal</th><th>Supplier</th><th>Qty</th></tr></thead><tbody>${inc.map(i=>`<tr><td>${fmtDate(i.date)}</td><td>${i.supplier||'-'}</td><td>${i.quantity}</td></tr>`).join('')}</tbody></table></div>` : '<p style="color:#94a3b8;font-size:12px;margin-bottom:16px;">Tidak ada</p>'}
+    <h4 style="font-size:13px;font-weight:700;margin:0 0 8px;">Riwayat Keluar</h4>
+    ${out.length ? `<div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Tujuan</th><th>Qty</th></tr></thead><tbody>${out.map(o=>`<tr><td>${fmtDate(o.shipmentDate)}</td><td>${o.destination||'-'}</td><td>${o.quantityOut}</td></tr>`).join('')}</tbody></table></div>` : '<p style="color:#94a3b8;font-size:12px;">Tidak ada</p>'}
+  `;
+  openModal('detailModal');
+}
+
+// ── Report ────────────────────────────────────────────────────
+let reportData = [];
+function renderReport() {
+  const owner = document.getElementById('rptOwner').value;
+  const type  = document.getElementById('rptType').value;
+  const month = document.getElementById('rptMonth').value;
+  const year  = document.getElementById('rptYear').value;
+  let rows = [];
+  if (type !== 'outgoing') {
+    DB.incomingGoods.filter(i => (!owner||i.owner===owner) && filterByMonthYear(i.date, month, year))
+      .forEach(i => rows.push({ date:i.date, owner:i.owner, desc:`Barang Masuk: ${i.itemName}`, qty:i.quantity, unit:i.unit }));
+  }
+  if (type !== 'incoming') {
+    DB.outgoingGoods.filter(o => (!owner||o.owner===owner) && filterByMonthYear(o.shipmentDate, month, year))
+      .forEach(o => rows.push({ date:o.shipmentDate, owner:o.owner, desc:`Barang Keluar: ${o.itemName}`, qty:o.quantityOut, unit:o.unit }));
+  }
+  rows.sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
+  reportData = rows;
+  const tbody = document.getElementById('reportTBody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px;">Tidak ada data</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr><td>${fmtDate(r.date)}</td><td style="font-size:12px;">${r.owner}</td><td>${r.desc}</td><td>${r.qty}</td><td>${r.unit}</td></tr>`).join('');
+}
+
+function filterByMonthYear(dateStr, month, year) {
+  if (!month && !year) return true;
+  const d = new Date(dateStr);
+  if (month && d.getMonth()+1 !== +month) return false;
+  if (year  && d.getFullYear()  !== +year)  return false;
+  return true;
+}
+
+function downloadCSV() {
+  if (!reportData.length) { toast('Tidak ada data', 'warning'); return; }
+  const header = ['Tanggal','Pemilik','Deskripsi','Qty','Satuan'];
+  const rows = reportData.map(r => [fmtDate(r.date), r.owner, r.desc, r.qty, r.unit].map(v => `"${v}"`).join(','));
+  const csv = '\uFEFF' + [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `Laporan-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  toast('CSV berhasil diunduh', 'success');
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function renderSettings() {
+  const allUsers = DB.users.length ? DB.users : [{username:'admin',role:'admin'},{username:'manager',role:'manager'},{username:'warehouse',role:'warehouse'},{username:'guest',role:'guest'}];
+  const opts = allUsers.map(u => `<option value="${u.username}">${u.username} (${u.role})</option>`).join('');
+  document.getElementById('cpUser').innerHTML = '<option value="">-- Pilih --</option>' + opts;
+  document.getElementById('userListTBody').innerHTML = allUsers.map(u => `
+    <tr>
+      <td>${u.username}${u.username===currentUser.username?' <span style="background:#dbeafe;color:#1d4ed8;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:700;">ANDA</span>':''}</td>
+      <td><span style="background:#f1f5f9;color:#334155;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">${u.role}</span></td>
+      <td><span style="background:#d1fae5;color:#065f46;padding:3px 8px;border-radius:4px;font-size:11px;">Aktif</span></td>
+      <td>${u.username !== currentUser.username ? `<button class="btn-icon" onclick="confirmAction('Hapus user ${u.username}?','danger',()=>deleteUser('${u.id||u.username}'))"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:14px;height:14px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}</td>
+    </tr>`).join('');
+}
+
+async function changePassword() {
+  const username = document.getElementById('cpUser').value;
+  const newPw    = document.getElementById('cpNew').value;
+  const confirm  = document.getElementById('cpConfirm').value;
+  if (!username||!newPw||!confirm) { toast('Isi semua field', 'warning'); return; }
+  if (newPw !== confirm) { toast('Password tidak cocok', 'error'); return; }
+  if (newPw.length < 6) { toast('Minimal 6 karakter', 'warning'); return; }
+  const user = DB.users.find(u => u.username === username);
+  if (!user) { toast('User tidak ditemukan di database', 'warning'); return; }
+  const btn = document.getElementById('cpBtn');
+  setLoading(btn, true);
+  try {
+    await api('update', 'users', { data: { ...user, password: newPw } });
+    const idx = DB.users.findIndex(u => u.username === username);
+    if (idx !== -1) DB.users[idx].password = newPw;
+    toast('Password berhasil diubah', 'success');
+    document.getElementById('cpNew').value = '';
+    document.getElementById('cpConfirm').value = '';
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+async function addUser() {
+  const username = document.getElementById('nuUser').value.trim();
+  const password = document.getElementById('nuPass').value;
+  const role     = document.getElementById('nuRole').value;
+  if (!username||!password||!role) { toast('Isi semua field', 'warning'); return; }
+  if (password.length < 6) { toast('Minimal 6 karakter', 'warning'); return; }
+  if (DB.users.some(u => u.username === username)) { toast('Username sudah ada', 'error'); return; }
+  const btn = document.getElementById('nuBtn');
+  setLoading(btn, true);
+  try {
+    const r = await api('create', 'users', { username, password, role, createdAt: now() });
+    DB.users.push({ id: r.id, username, password, role });
+    toast('User berhasil ditambahkan', 'success');
+    document.getElementById('nuUser').value = '';
+    document.getElementById('nuPass').value = '';
+    document.getElementById('nuRole').value = '';
+    renderSettings();
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+async function deleteUser(idOrUsername) {
+  const user = DB.users.find(u => u.id === idOrUsername || u.username === idOrUsername);
+  if (!user) { toast('User tidak ditemukan', 'error'); return; }
+  try {
+    await api('delete', 'users', { id: user.id });
+    DB.users = DB.users.filter(u => u.id !== user.id);
+    toast('User dihapus', 'success');
+    renderSettings();
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+}
+
+// ── Modal Helpers ─────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openSwitchModal() {
+  document.getElementById('swUser').value = '';
+  document.getElementById('swPass').value = '';
+  openModal('switchModal');
+}
+
+function confirmAction(msg, type, cb) {
+  document.getElementById('confirmTitle').textContent = type === 'danger' ? 'Konfirmasi Hapus' : 'Konfirmasi';
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.className = 'btn ' + (type === 'danger' ? 'btn-danger' : 'btn-success');
+  btn.textContent = type === 'danger' ? 'Ya, Hapus' : 'Setujui';
+  btn.onclick = () => { closeModal('confirmModal'); cb(); };
+  openModal('confirmModal');
+}
+
+// ── Utility ───────────────────────────────────────────────────
+function fmtDate(str) {
+  if (!str) return '-';
+  try { return new Date(str).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }); }
+  catch { return str; }
+}
+function now() { return new Date().toISOString(); }
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function setLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) {
+    btn._orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Menyimpan...';
+  } else {
+    btn.disabled = false;
+    if (btn._orig) btn.innerHTML = btn._orig;
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  if (SCRIPT_URL) {
+    document.getElementById('configBanner').classList.remove('show');
+    if (document.getElementById('scriptUrlInput')) document.getElementById('scriptUrlInput').value = SCRIPT_URL;
+    if (document.getElementById('cfgUrl')) document.getElementById('cfgUrl').value = SCRIPT_URL;
+  }
+});
+</script>
 </body>
 </html>
