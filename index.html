@@ -761,7 +761,6 @@
 const SCRIPT_URL_KEY = 'smb_script_url';
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlwTAoi3JWoMMvfamDPA4tumsk3lDeROrSsZDcyMD53NoETp5l-uJ4SOGL4166SyE/exec';
 
-
 function saveScriptUrl() {
   const url = (document.getElementById('scriptUrlInput') || document.getElementById('cfgUrl')).value.trim();
   if (!url) { toast('Masukkan URL script', 'warning'); return; }
@@ -1038,7 +1037,7 @@ function renderIncoming() {
       <td>${item.batchLot||'-'}</td><td>${item.quantity}</td><td>${item.unit}</td>
       <td>${badge}${item.approvedBy?`<br><small style="color:#64748b;font-size:10px;">oleh ${item.approvedBy}</small>`:''}</td>
       <td style="white-space:nowrap;">
-        ${canEdit ? `<button class="btn-icon" title="Edit" onclick="editIncoming('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="width:15px;height:15px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
+		${canEdit ? `<button class="btn-icon" title="Edit" onclick="editIncoming('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="width:15px;height:15px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
         ${canApprove ? `<button class="btn-icon" title="Setujui" onclick="approveIncoming('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" style="width:15px;height:15px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></button>` : ''}
         ${canDelete ? `<button class="btn-icon" title="Hapus" onclick="confirmAction('Hapus data barang masuk ini?','danger',()=>deleteIncoming('${item.id}'))"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:15px;height:15px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
       </td>
@@ -1174,6 +1173,7 @@ function renderOutgoing() {
   const rows = [...DB.outgoingGoods].sort((a,b) => new Date(b.shipmentDate||0) - new Date(a.shipmentDate||0));
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Belum ada data</td></tr>'; return; }
   tbody.innerHTML = rows.map(item => {
+    const canApprove = item.status === 'pending' && ['admin','manager'].includes(currentUser.role);
     const canEdit   = ['warehouse','admin','manager'].includes(currentUser.role) && (currentUser.role !== 'warehouse' || item.createdBy === currentUser.username);
     const canDelete = ['admin','manager'].includes(currentUser.role);
     const badge = item.status === 'pending' ? '<span class="badge badge-pending">Menunggu</span>' : '<span class="badge badge-approved">Disetujui</span>';
@@ -1185,11 +1185,14 @@ function renderOutgoing() {
       <td>${item.destination||'-'}</td><td>${badge}</td>
       <td style="white-space:nowrap;">
         ${canEdit ? `<button class="btn-icon" title="Edit" onclick="editOutgoing('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="width:15px;height:15px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>` : ''}
-        ${canDelete ? `<button class="btn-icon" title="Hapus" onclick="confirmAction('Hapus data barang keluar ini?','danger',()=>deleteOutgoing('${item.id}'))"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:15px;height:15px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+        ${canApprove ? `<button class="btn-icon" title="Setujui" onclick="approveOutgoing('${item.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2" style="width:15px;height:15px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></button>` : ''}
+        ${canDelete ? `<button class="btn-icon" title="Hapus" onclick="confirmAction('Hapus data?','danger',()=>deleteOutgoing('${item.id}'))"><svg viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" style="width:15px;height:15px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
       </td>
     </tr>`;
   }).join('');
 }
+
+
 
 function openOutgoingModal(id = null) {
   editingOutgoingId = id;
@@ -1212,12 +1215,124 @@ function openOutgoingModal(id = null) {
     setTimeout(() => {
       document.getElementById('omItemName').value = item.itemName || '';
       loadOmBatches();
-      setTimeout(() => { document.getElementById('omBatch').value = item.batchLot || ''; }, 50);
-    }, 50);
+      setTimeout(() => { 
+        document.getElementById('omBatch').value = item.batchLot || ''; 
+        document.getElementById('omUnit').value = item.unit || '';
+      }, 100);
+    }, 100);
     document.getElementById('omDelivNo').value = item.deliveryNo || '';
     document.getElementById('omPONo').value    = item.poNo || '';
     document.getElementById('omQty').value     = item.quantityOut || '';
-    document.getElementById('omUnit').value    = item.unit || '';
+    document.getElementById('omStatus').value  = item.shipmentStatus || '';
+    document.getElementById('omDest').value    = item.destination || '';
+    document.getElementById('omOfficer').value = item.sendingOfficer || '';
+    document.getElementById('omSales').value   = item.salesName || '';
+    document.getElementById('omNotes').value   = item.notes || '';
+  }
+  openModal('outgoingModal');
+}
+
+async function approveOutgoing(id) {
+  const item = DB.outgoingGoods.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm('Setujui pengeluaran barang ini?')) return;
+
+  try {
+    item.status = 'approved';
+    item.approvedBy = currentUser.username;
+    item.approvedAt = now();
+    await api('update', 'outgoingGoods', { data: item });
+    toast('Data Berhasil Disetujui', 'success');
+    loadAllData();
+  } catch (e) {
+    toast('Gagal menyetujui: ' + e.message, 'error');
+  }
+}
+
+
+// ── Item Names ────────────────────────────────────────────────
+function openAddItemNameModal() {
+  document.getElementById('inOwner').value = '';
+  document.getElementById('inName').value  = '';
+  document.getElementById('inCode').value  = '';
+  openModal('itemNameModal');
+}
+
+async function saveItemName() {
+  const btn   = document.getElementById('inBtn');
+  const owner = document.getElementById('inOwner').value;
+  const name  = document.getElementById('inName').value.trim();
+  const code  = document.getElementById('inCode').value.trim();
+  if (!owner||!name||!code) { toast('Isi semua field', 'warning'); return; }
+  setLoading(btn, true);
+  try {
+    const r = await api('create', 'itemNames', { owner, itemName: name, itemCode: code, createdAt: now(), createdBy: currentUser.username });
+    DB.itemNames.push({ id: r.id, owner, itemName: name, itemCode: code });
+    toast('Nama barang ditambahkan', 'success');
+    closeModal('itemNameModal');
+  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
+  setLoading(btn, false);
+}
+
+// ── Inventory ── (lanjutkan sisa kode lama kamu atau pakai penutup di bawah)
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function confirmAction(msg, type, cb) {
+  document.getElementById('confirmTitle').textContent = type === 'danger' ? 'Konfirmasi Hapus' : 'Konfirmasi';
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmOkBtn');
+  btn.className = 'btn ' + (type === 'danger' ? 'btn-danger' : 'btn-success');
+  btn.textContent = type === 'danger' ? 'Ya, Hapus' : 'Setujui';
+  btn.onclick = () => { closeModal('confirmModal'); cb(); };
+  openModal('confirmModal');
+}
+
+function fmtDate(str) {
+  if (!str) return '-';
+  try { return new Date(str).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' }); }
+  catch { return str; }
+}
+function now() { return new Date().toISOString(); }
+
+function toast(msg, type = 'success') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function setLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) {
+    btn._orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Memproses...';
+  } else {
+    btn.disabled = false;
+    if (btn._orig) btn.innerHTML = btn._orig;
+  }
+}
+
+window.addEventListener('load', () => {
+  if (SCRIPT_URL) {
+    document.getElementById('configBanner').classList.remove('show');
+  }
+});
+</script>
+</body>
+</html>
+
+      setTimeout(() => { 
+        document.getElementById('omBatch').value = item.batchLot || '';
+        document.getElementById('omUnit').value = item.unit || '';
+      }, 100);
+    }, 100);
+    document.getElementById('omDelivNo').value = item.deliveryNo || '';
+    document.getElementById('omPONo').value    = item.poNo || '';
+    document.getElementById('omQty').value     = item.quantityOut || '';
     document.getElementById('omStatus').value  = item.shipmentStatus || '';
     document.getElementById('omDest').value    = item.destination || '';
     document.getElementById('omOfficer').value = item.sendingOfficer || '';
@@ -1259,45 +1374,47 @@ function loadOmBatches() {
 
 async function saveOutgoing() {
   const btn = document.getElementById('omBtn');
-  const shipmentDate    = document.getElementById('omDate').value;
-  const owner           = document.getElementById('omOwner').value;
-  const itemName        = document.getElementById('omItemName').value;
-  const batchLot        = document.getElementById('omBatch').value;
-  const deliveryNo      = document.getElementById('omDelivNo').value;
-  const poNo            = document.getElementById('omPONo').value;
-  const quantityOut     = +document.getElementById('omQty').value;
-  const unit            = document.getElementById('omUnit').value;
-  const shipmentStatus  = document.getElementById('omStatus').value;
-  const destination     = document.getElementById('omDest').value;
-  const sendingOfficer  = document.getElementById('omOfficer').value;
-  const salesName       = document.getElementById('omSales').value;
-  const notes           = document.getElementById('omNotes').value;
+  const data = {
+    shipmentDate: document.getElementById('omDate').value,
+    owner: document.getElementById('omOwner').value,
+    itemName: document.getElementById('omItemName').value,
+    batchLot: document.getElementById('omBatch').value,
+    quantityOut: document.getElementById('omQty').value,
+    unit: document.getElementById('omUnit').value,
+    shipmentStatus: document.getElementById('omStatus').value,
+    destination: document.getElementById('omDest').value,
+    sendingOfficer: document.getElementById('omOfficer').value,
+    salesName: document.getElementById('omSales').value,
+    notes: document.getElementById('omNotes').value,
+    status: currentUser.role === 'warehouse' ? 'pending' : 'approved',
+    updatedAt: now(),
+    updatedBy: currentUser.username
+  };
+
   if (!shipmentDate||!owner||!itemName||!quantityOut||!shipmentStatus) { toast('Isi semua field yang wajib', 'warning'); return; }
   // Stock check
   const totalIn  = DB.incomingGoods.filter(i => i.owner===owner && i.itemName===itemName && i.status==='approved').reduce((s,i) => s+(+i.quantity||0),0);
   const totalOut = DB.outgoingGoods.filter(o => o.owner===owner && o.itemName===itemName && o.id!==editingOutgoingId).reduce((s,o) => s+(+o.quantityOut||0),0);
   if (quantityOut > (totalIn - totalOut)) { toast(`Stok tidak cukup. Tersedia: ${totalIn-totalOut}`, 'error'); return; }
-  setLoading(btn, true);
+setLoading(btn, true);
   try {
-    const status = currentUser.role === 'warehouse' ? 'pending' : 'approved';
     if (editingOutgoingId) {
-      const existing = DB.outgoingGoods.find(i => i.id === editingOutgoingId);
-      const updated = { ...existing, shipmentDate, owner, itemName, batchLot, deliveryNo, poNo, quantityOut, unit, shipmentStatus, destination, sendingOfficer, salesName, notes, status, updatedAt: now(), updatedBy: currentUser.username };
-      await api('update', 'outgoingGoods', { data: updated });
-      const idx = DB.outgoingGoods.findIndex(i => i.id === editingOutgoingId);
-      if (idx !== -1) DB.outgoingGoods[idx] = updated;
+      data.id = editingOutgoingId;
+      await api('update', 'outgoingGoods', { data: data });
       toast('Data berhasil diperbarui', 'success');
     } else {
-      const r = await api('create', 'outgoingGoods', { shipmentDate, owner, itemName, batchLot, deliveryNo, poNo, quantityOut, unit, shipmentStatus, destination, sendingOfficer, salesName, notes, status, createdAt: now(), createdBy: currentUser.username } );
-      DB.outgoingGoods.push({ id: r.id, shipmentDate, owner, itemName, batchLot, deliveryNo, poNo, quantityOut, unit, shipmentStatus, destination, sendingOfficer, salesName, notes, status, createdAt: now(), createdBy: currentUser.username });
-      toast(status==='pending' ? 'Tersimpan, menunggu persetujuan' : 'Barang keluar ditambahkan', 'success');
+      data.createdAt = now();
+      data.createdBy = currentUser.username;
+      await api('create', 'outgoingGoods', { data: data });
+      toast('Data berhasil ditambahkan', 'success');
     }
-    addActivity('Tambah Barang Keluar', `${itemName} qty:${quantityOut}`);
     closeModal('outgoingModal');
-    renderOutgoing();
-  } catch(e) { toast('Gagal: ' + e.message, 'error'); }
-  setLoading(btn, false);
-}
+    loadAllData(); // Refresh data dari sheet
+  } catch(e) { 
+    toast('Gagal: ' + e.message, 'error'); 
+  } finally { 
+    setLoading(btn, false); 
+  }
 
 async function deleteOutgoing(id) {
   try {
@@ -1307,6 +1424,25 @@ async function deleteOutgoing(id) {
     renderOutgoing();
   } catch(e) { toast('Gagal: ' + e.message, 'error'); }
 }
+
+async function approveOutgoing(id) {
+  const item = DB.outgoingGoods.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm('Setujui pengeluaran barang ini?')) return;
+
+  try {
+    item.status = 'approved';
+    item.approvedBy = currentUser.username;
+    item.approvedAt = now();
+    await api('update', 'outgoingGoods', { data: item });
+    toast('Data Berhasil Disetujui', 'success');
+    loadAllData();
+  } catch (e) {
+    toast('Gagal menyetujui: ' + e.message, 'error');
+  }
+}
+
+
 
 // ── Item Names ────────────────────────────────────────────────
 function openAddItemNameModal() {
