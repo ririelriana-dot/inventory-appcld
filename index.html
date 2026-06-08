@@ -247,7 +247,7 @@
 <body>
 
 <!-- ═══ CONFIG BANNER ═══ -->
-<div id="configBanner" class="show">
+<div id="configBanner" style="display:none;">
   <strong>⚙️ Konfigurasi Backend</strong> — Masukkan URL Google Apps Script Web App Anda:
   <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
   <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
@@ -759,7 +759,8 @@
 <script>
 // ── Config ───────────────────────────────────────────────────
 const SCRIPT_URL_KEY = 'smb_script_url';
-let SCRIPT_URL = localStorage.getItem(SCRIPT_URL_KEY) || '';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzlwTAoi3JWoMMvfamDPA4tumsk3lDeROrSsZDcyMD53NoETp5l-uJ4SOGL4166SyE/exec';
+
 
 function saveScriptUrl() {
   const url = (document.getElementById('scriptUrlInput') || document.getElementById('cfgUrl')).value.trim();
