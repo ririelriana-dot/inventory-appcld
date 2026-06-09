@@ -249,7 +249,7 @@
 <!-- ═══ CONFIG BANNER ═══ -->
 <div id="configBanner">
   <strong>⚙️ Konfigurasi Backend</strong> — Masukkan URL Google Apps Script Web App Anda:
-  <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+  <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/AKfycbwRYn3lfwMhaUJr-XKGJTeapEJVle9CCGxmp0wMDERvzZrMzkb8jEerniJmKZN7nk0U/exec">
   <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
     <button onclick="saveScriptUrl()">Simpan & Muat Data</button>
     <button onclick="seedData()" style="background:#059669;">Inisialisasi Data Default</button>
@@ -789,7 +789,7 @@
 <script>
 // ── Config ───────────────────────────────────────────────────
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwT6CTkIrpAdnfVkLoGB2RwQRiUnvoy4VLM-5wWfR6rgKTC_jJcbVElEJB06ymA0dfv2A/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwRYn3lfwMhaUJr-XKGJTeapEJVle9CCGxmp0wMDERvzZrMzkb8jEerniJmKZN7nk0U/exec';
 
 function saveScriptUrl() {
   const url = (document.getElementById('scriptUrlInput') || document.getElementById('cfgUrl')).value.trim();
