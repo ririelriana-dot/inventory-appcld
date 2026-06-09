@@ -475,7 +475,7 @@
 
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Pemilik</th><th>Nama Barang</th><th>Kode</th><th>Lot/Batch</th><th>Total Masuk</th><th>Total Keluar</th><th>Satuan</th><th>Sisa Stok</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>Pemilik</th><th>Nama Barang</th><th>Kode</th><th>Lot/Batch</th><th>Tgl. Kadaluarsa</th><th>Total Masuk</th><th>Total Keluar</th><th>Satuan</th><th>Sisa Stok</th><th>Aksi</th></tr></thead>
             <tbody id="inventoryTBody"><tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:24px;">Memuat data...</td></tr></tbody>
           </table>
         </div>
@@ -502,11 +502,41 @@
               </select>
             </div>
             <div class="form-group" style="margin:0;">
-              <label>Tipe</label>
-              <select id="rptType" class="select-field" onchange="renderReport()">
+              <label>Transaksi</label>
+              <select id="rptType" class="select-field" onchange="onRptTypeChange()">
                 <option value="all">Semua</option>
                 <option value="incoming">Barang Masuk</option>
                 <option value="outgoing">Barang Keluar</option>
+                <option value="dashboard">Dashboard</option>
+              </select>
+            </div>
+            <!-- Sales dropdown: tampil hanya saat Barang Keluar dipilih -->
+            <div class="form-group" id="rptSalesGroup" style="margin:0;display:none;">
+              <label>Sales</label>
+              <select id="rptSales" class="select-field" onchange="renderReport()">
+                <option value="">-- Semua Sales --</option>
+              </select>
+            </div>
+            <!-- Pembeli dropdown -->
+            <div class="form-group" id="rptBuyerGroup" style="margin:0;display:none;">
+              <label>Pembeli / Tujuan</label>
+              <select id="rptBuyer" class="select-field" onchange="renderReport()">
+                <option value="">-- Semua Pembeli --</option>
+              </select>
+            </div>
+            <!-- Pemasok dropdown: tampil saat Barang Masuk atau Semua dipilih -->
+            <div class="form-group" id="rptSupplierGroup" style="margin:0;">
+              <label>Pemasok</label>
+              <select id="rptSupplier" class="select-field" onchange="renderReport()">
+                <option value="">-- Semua Pemasok --</option>
+              </select>
+            </div>
+            <!-- Dashboard download options: tampil saat dashboard dipilih -->
+            <div class="form-group" id="rptDashboardGroup" style="margin:0;display:none;">
+              <label>Download Dashboard</label>
+              <select id="rptDashboardPeriod" class="select-field">
+                <option value="monthly">Per Bulan</option>
+                <option value="yearly">Per Tahun</option>
               </select>
             </div>
             <div class="form-group" style="margin:0;">
@@ -525,30 +555,33 @@
               <label>Tahun</label>
               <select id="rptYear" class="select-field" onchange="renderReport()">
                 <option value="">-- Semua --</option>
-                <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
               </select>
             </div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button class="btn btn-secondary" onclick="previewReport('csv')">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;" id="rptDownloadBtns">
+            <button class="btn btn-secondary" onclick="previewReport('csv')" id="btnDlCsv">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               Download CSV
             </button>
-            <button class="btn btn-success" onclick="previewReport('excel')">
+            <button class="btn btn-success" onclick="previewReport('excel')" id="btnDlExcel">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               Download Excel
             </button>
-            <button class="btn btn-danger" onclick="previewReport('pdf')">
+            <button class="btn btn-danger" onclick="previewReport('pdf')" id="btnDlPdf">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
               Download PDF
+            </button>
+            <button class="btn btn-primary" onclick="downloadDashboard()" id="btnDlDashboard" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+              Download Dashboard
             </button>
             <span id="rptCount" style="font-size:12px;color:#64748b;margin-left:4px;"></span>
           </div>
         </div>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Tanggal</th><th>Pemilik</th><th>Tipe</th><th>Nama Barang</th><th>Lot/Batch</th><th>Qty</th><th>Satuan</th><th>Keterangan</th></tr></thead>
-            <tbody id="reportTBody"><tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Pilih filter untuk melihat laporan</td></tr></tbody>
+            <thead><tr><th>Tanggal</th><th>Pemilik</th><th>Tipe</th><th>Nama Barang</th><th>Lot/Batch</th><th>Qty</th><th>Satuan</th><th>Kadaluarsa</th><th>Sisa Stok</th><th>Keterangan</th></tr></thead>
+            <tbody id="reportTBody"><tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Pilih filter untuk melihat laporan</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -792,7 +825,11 @@
 <!-- Detail Item Modal -->
 <div class="modal-overlay" id="detailModal" onclick="if(event.target===this)closeModal('detailModal')">
   <div class="modal-box" style="max-width:600px;">
-    <div class="modal-header"><h2>Detail Barang</h2>
+    <div class="modal-header">
+      <div>
+        <h2 id="detailModalTitle">Detail Barang</h2>
+        <div id="detailModalSubtitle" style="font-size:12px;color:#64748b;margin-top:2px;"></div>
+      </div>
       <button class="btn-icon" onclick="closeModal('detailModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body" id="detailContent"></div>
@@ -896,6 +933,11 @@ async function loadAllData() {
     DB.incomingGoods = inc.data || [];
     DB.outgoingGoods = out.data || [];
     refreshCurrentView();
+    // If on inventory tab, rebuild dropdown options too
+    if (currentTab === 'inventory') {
+      const owner = document.getElementById('invOwnerFilter') ? document.getElementById('invOwnerFilter').value : '';
+      buildInvDropdownOptions(owner);
+    }
   } catch (e) {
     toast('Gagal memuat data: ' + e.message, 'error');
   }
@@ -955,6 +997,7 @@ async function doLogin() {
     if (user) {
       currentUser = user;
       showApp();
+      addActivity('Login', `${username} masuk sebagai ${user.role}`);
     } else {
       showLoginError('Username atau password salah');
     }
@@ -965,6 +1008,7 @@ async function doLogin() {
 }
 
 function doLogout() {
+  if (currentUser) addActivity('Logout', `${currentUser.username} keluar dari sistem`);
   currentUser = null;
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
@@ -1058,7 +1102,7 @@ function refreshTab(id) {
   else if (id === 'incoming') renderIncoming();
   else if (id === 'outgoing') renderOutgoing();
   else if (id === 'inventory') renderInventory();
-  else if (id === 'report') renderReport();
+  else if (id === 'report') { populateRptYear(); populateRptSupplier(); renderReport(); }
   else if (id === 'settings') renderSettings();
 }
 
@@ -1084,8 +1128,9 @@ function renderDashboard() {
 }
 
 function addActivity(action, details) {
-  activityLog.unshift({ action, details, user: currentUser.username, time: new Date().toLocaleTimeString('id-ID') });
-  if (activityLog.length > 50) activityLog.pop();
+  const ts = new Date().toISOString();
+  activityLog.unshift({ action, details, user: currentUser?.username || '-', time: new Date().toLocaleTimeString('id-ID'), ts });
+  if (activityLog.length > 200) activityLog.pop();
   if (currentTab === 'dashboard') renderDashboard();
 }
 
@@ -1229,10 +1274,12 @@ async function approveIncoming(id) {
 }
 
 async function deleteIncoming(id) {
+  const item = DB.incomingGoods.find(i => i.id === id);
   try {
     await api('delete', 'incomingGoods', { id });
     DB.incomingGoods = DB.incomingGoods.filter(i => i.id !== id);
     toast('Data barang masuk dihapus', 'success');
+    addActivity('Hapus Barang Masuk', `${item?.itemName||id}`);
     renderIncoming();
   } catch(e) { toast('Gagal: ' + e.message, 'error'); }
 }
@@ -1387,10 +1434,12 @@ async function approveOutgoing(id) {
 }
 
 async function deleteOutgoing(id) {
+  const item = DB.outgoingGoods.find(o => o.id === id);
   try {
     await api('delete', 'outgoingGoods', { id });
     DB.outgoingGoods = DB.outgoingGoods.filter(i => i.id !== id);
     toast('Data barang keluar dihapus', 'success');
+    addActivity('Hapus Barang Keluar', `${item?.itemName||id}`);
     renderOutgoing();
   } catch(e) { toast('Gagal: ' + e.message, 'error'); }
 }
@@ -1545,58 +1594,105 @@ function updateInvChips() {
 }
 
 function renderInventory() {
-  const owner  = document.getElementById('invOwnerFilter').value;
-  const search = document.getElementById('invItemSearch').value.toLowerCase().trim();
-  const tbody  = document.getElementById('inventoryTBody');
+  const owner   = document.getElementById('invOwnerFilter').value;
+  const search  = document.getElementById('invItemSearch').value.toLowerCase().trim();
+  const tbody   = document.getElementById('inventoryTBody');
   const countEl = document.getElementById('invResultCount');
 
-  // Build grouped data from incomingGoods
+  // Show loading state
+  tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:32px;">Memuat data...</td></tr>';
+
+  // If DB not loaded yet, wait
+  if (!DB.incomingGoods) {
+    setTimeout(renderInventory, 300);
+    return;
+  }
+
+  // Build grouped rows from incomingGoods — each unique owner+itemName+batchLot = 1 row
   const grouped = {};
-  DB.incomingGoods.forEach(i => {
-    if (!i.itemName || !i.itemName.trim()) return;
-    if (owner && i.owner !== owner) return;
+  DB.incomingGoods.filter(i => i.itemName && String(i.itemName).trim()).forEach(i => {
+    if (owner  && i.owner !== owner) return;
     if (search && !i.itemName.toLowerCase().includes(search) && !(i.itemCode||'').toLowerCase().includes(search)) return;
-    const k = `${i.owner}||${i.itemName}||${i.batchLot}`;
+
+    const k = `${i.owner}||${i.itemName}||${i.batchLot||''}`;
     if (!grouped[k]) {
-      // Get itemCode from itemNames sheet
       const meta = DB.itemNames.find(m => m.owner === i.owner && m.itemName === i.itemName);
-      grouped[k] = { owner: i.owner, itemName: i.itemName, itemCode: meta?.itemCode || i.itemCode || '-', batchLot: i.batchLot, totalIn: 0, totalOut: 0, unit: i.unit };
+      grouped[k] = {
+        owner:       i.owner,
+        itemName:    i.itemName,
+        itemCode:    meta?.itemCode || i.itemCode || '-',
+        batchLot:    i.batchLot || '-',
+        expiredDate: i.expiredDate || '',
+        totalIn:     0,
+        totalOut:    0,
+        unit:        i.unit || ''
+      };
     }
-    grouped[k].totalIn += +i.quantity || 0;
+    grouped[k].totalIn     += +i.quantity || 0;
+    // Keep the latest expiredDate if multiple entries same batch
+    if (i.expiredDate && (!grouped[k].expiredDate || i.expiredDate > grouped[k].expiredDate)) {
+      grouped[k].expiredDate = i.expiredDate;
+    }
   });
 
-  DB.outgoingGoods.forEach(o => {
-    if (!o.itemName) return;
-    const k = `${o.owner}||${o.itemName}||${o.batchLot}`;
+  // Add outgoing quantities
+  DB.outgoingGoods.filter(o => o.itemName && String(o.itemName).trim()).forEach(o => {
+    if (owner && o.owner !== owner) return;
+    if (search && !o.itemName.toLowerCase().includes(search)) return;
+    const k = `${o.owner}||${o.itemName}||${o.batchLot||''}`;
     if (grouped[k]) grouped[k].totalOut += +o.quantityOut || 0;
   });
 
-  const entries = Object.values(grouped).sort((a,b) => a.itemName.localeCompare(b.itemName));
+  const entries = Object.values(grouped).sort((a,b) =>
+    a.owner.localeCompare(b.owner) || a.itemName.localeCompare(b.itemName)
+  );
 
   if (countEl) countEl.textContent = entries.length ? `${entries.length} data ditemukan` : '';
 
   if (!entries.length) {
-    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:32px;">
-      ${(owner || search) ? 'Tidak ada data yang sesuai filter' : 'Belum ada data barang'}
-    </td></tr>`;
+    const msg = (owner || search) ? 'Tidak ada data yang sesuai filter' : 'Belum ada data barang masuk';
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:32px;">${msg}</td></tr>`;
     updateInvChips();
     return;
   }
 
   tbody.innerHTML = entries.map(g => {
-    const sisa  = g.totalIn - g.totalOut;
-    const color = sisa <= 0 ? '#dc2626' : sisa < 10 ? '#f59e0b' : '#059669';
+    const sisa   = g.totalIn - g.totalOut;
+    const color  = sisa <= 0 ? '#dc2626' : sisa < 10 ? '#f59e0b' : '#059669';
     const sisaBg = sisa <= 0 ? '#fee2e2' : sisa < 10 ? '#fef3c7' : '#d1fae5';
+
+    // Expired date styling
+    let expDisplay = '-';
+    let expStyle   = 'color:#94a3b8;';
+    if (g.expiredDate) {
+      const expDate = new Date(g.expiredDate);
+      const today   = new Date();
+      const diffDay = Math.ceil((expDate - today) / (1000*60*60*24));
+      expDisplay = fmtDate(g.expiredDate);
+      if (diffDay < 0)        expStyle = 'color:#dc2626;font-weight:600;';         // expired
+      else if (diffDay <= 30) expStyle = 'color:#d97706;font-weight:600;';         // < 30 hari
+      else if (diffDay <= 90) expStyle = 'color:#f59e0b;';                         // < 90 hari
+      else                    expStyle = 'color:#059669;';                         // aman
+    }
+
     return `<tr>
       <td style="font-size:12px;">${g.owner}</td>
       <td style="font-weight:500;">${g.itemName}</td>
       <td style="font-family:monospace;font-size:12px;color:#64748b;">${g.itemCode}</td>
-      <td>${g.batchLot||'-'}</td>
+      <td>${g.batchLot}</td>
+      <td style="${expStyle}">${expDisplay}</td>
       <td style="text-align:center;">${g.totalIn}</td>
       <td style="text-align:center;">${g.totalOut}</td>
       <td>${g.unit}</td>
-      <td style="text-align:center;"><span style="display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:13px;background:${sisaBg};color:${color};">${sisa}</span></td>
-      <td><button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;" onclick="showDetail('${g.owner.replace(/'/g,"\'")}','${g.itemName.replace(/'/g,"\'")}','${(g.batchLot||'').replace(/'/g,"\'")}')">Detail</button></td>
+      <td style="text-align:center;">
+        <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:13px;background:${sisaBg};color:${color};">${sisa}</span>
+      </td>
+      <td>
+        <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;"
+          onclick="showDetail('${String(g.owner||'')}','${String(g.itemName||'')}','${String(g.batchLot||'')}')">
+          Detail
+        </button>
+      </td>
     </tr>`;
   }).join('');
 
@@ -1605,15 +1701,47 @@ function renderInventory() {
 
 
 function showDetail(owner, itemName, batchLot) {
-  const inc = DB.incomingGoods.filter(i => i.owner===owner && i.itemName===itemName && i.batchLot===batchLot);
-  const out = DB.outgoingGoods.filter(o => o.owner===owner && o.itemName===itemName && o.batchLot===batchLot);
-  const totalIn = inc.reduce((s,i) => s+(+i.quantity||0),0);
+  owner    = String(owner||'');
+  itemName = String(itemName||'');
+  batchLot = String(batchLot||'');
+  const inc = DB.incomingGoods.filter(i => String(i.owner||'')===owner && String(i.itemName||'')===itemName && String(i.batchLot||'')===batchLot);
+  const out = DB.outgoingGoods.filter(o => String(o.owner||'')===owner && String(o.itemName||'')===itemName && String(o.batchLot||'')===batchLot);
+  const totalIn  = inc.reduce((s,i) => s+(+i.quantity||0),0);
   const totalOut = out.reduce((s,o) => s+(+o.quantityOut||0),0);
+
+  // Expired date from the first incoming entry that has it
+  const expiredRaw = (inc.find(i => i.expiredDate) || {}).expiredDate || '';
+  let expiredLabel = '-';
+  let expiredBg    = '#f1f5f9';
+  let expiredColor = '#64748b';
+  let expiredTag   = '';
+  if (expiredRaw) {
+    const expDate = new Date(expiredRaw);
+    const today   = new Date();
+    const diffDay = Math.ceil((expDate - today) / (1000*60*60*24));
+    expiredLabel = fmtDate(expiredRaw);
+    if (diffDay < 0)        { expiredBg='#fee2e2'; expiredColor='#dc2626'; expiredTag='<span style="margin-left:8px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:#dc2626;color:white;">KADALUARSA</span>'; }
+    else if (diffDay <= 30) { expiredBg='#fef3c7'; expiredColor='#d97706'; expiredTag='<span style="margin-left:8px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:#f59e0b;color:white;">< 30 Hari</span>'; }
+    else if (diffDay <= 90) { expiredBg='#fff7ed'; expiredColor='#ea580c'; expiredTag='<span style="margin-left:8px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:#ea580c;color:white;">< 90 Hari</span>'; }
+    else                    { expiredBg='#f0fdf4'; expiredColor='#059669'; expiredTag='<span style="margin-left:8px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:#059669;color:white;">Aman</span>'; }
+  }
+
+  document.getElementById('detailModalTitle').textContent = itemName || 'Detail Barang';
+  document.getElementById('detailModalSubtitle').innerHTML = batchLot && batchLot !== '-'
+    ? `<span style="background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;font-family:monospace;">Batch: ${batchLot}</span>`
+    : '';
   document.getElementById('detailContent').innerHTML = `
     <div style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
       <div style="background:#eff6ff;padding:12px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#1d4ed8;font-weight:600;">MASUK</div><div style="font-size:22px;font-weight:700;color:#1d4ed8;">${totalIn}</div></div>
       <div style="background:#fff7ed;padding:12px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#ea580c;font-weight:600;">KELUAR</div><div style="font-size:22px;font-weight:700;color:#ea580c;">${totalOut}</div></div>
       <div style="background:#f0fdf4;padding:12px;border-radius:6px;text-align:center;"><div style="font-size:11px;color:#059669;font-weight:600;">SISA</div><div style="font-size:22px;font-weight:700;color:#059669;">${totalIn-totalOut}</div></div>
+    </div>
+    <div style="background:${expiredBg};border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:${expiredColor};margin-bottom:3px;">Tanggal Kadaluarsa</div>
+        <div style="font-size:16px;font-weight:700;color:${expiredColor};display:flex;align-items:center;">${expiredLabel}${expiredTag}</div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="${expiredColor}" stroke-width="1.5" style="width:28px;height:28px;opacity:0.4;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     </div>
     <h4 style="font-size:13px;font-weight:700;margin:0 0 8px;">Riwayat Masuk</h4>
     ${inc.length ? `<div class="table-wrap" style="margin-bottom:16px;"><table><thead><tr><th>Tanggal</th><th>Supplier</th><th>Qty</th></tr></thead><tbody>${inc.map(i=>`<tr><td>${fmtDate(i.date)}</td><td>${i.supplier||'-'}</td><td>${i.quantity}</td></tr>`).join('')}</tbody></table></div>` : '<p style="color:#94a3b8;font-size:12px;margin-bottom:16px;">Tidak ada</p>'}
@@ -1626,6 +1754,94 @@ function showDetail(owner, itemName, batchLot) {
 // ── Report ────────────────────────────────────────────────────
 // ── Report ────────────────────────────────────────────────────
 let reportData = [];
+
+function populateRptYear() {
+  const sel = document.getElementById('rptYear');
+  if (!sel) return;
+  const years = new Set();
+  DB.incomingGoods.forEach(i => { const d = new Date(i.date); if (!isNaN(d)) years.add(d.getFullYear()); });
+  DB.outgoingGoods.forEach(o => { const d = new Date(o.shipmentDate); if (!isNaN(d)) years.add(d.getFullYear()); });
+  // Always include current year
+  years.add(new Date().getFullYear());
+  const sorted = [...years].sort((a,b) => a - b);
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">-- Semua --</option>' +
+    sorted.map(y => `<option value="${y}"${String(curVal)===String(y)?' selected':''}>${y}</option>`).join('');
+}
+
+function populateRptSales() {
+  const sel = document.getElementById('rptSales');
+  if (!sel) return;
+  const names = [...new Set(DB.outgoingGoods.map(o => (o.salesName||'').trim()).filter(Boolean))].sort();
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">-- Semua Sales --</option>' +
+    names.map(n => `<option value="${n}"${curVal===n?' selected':''}>${n}</option>`).join('');
+}
+
+function populateRptBuyer() {
+  const sel = document.getElementById('rptBuyer');
+  if (!sel) return;
+  const buyers = [...new Set(DB.outgoingGoods.map(o => (o.destination||'').trim()).filter(Boolean))].sort();
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">-- Semua Pembeli --</option>' +
+    buyers.map(b => `<option value="${b}"${curVal===b?' selected':''}>${b}</option>`).join('');
+}
+
+function populateRptSupplier() {
+  const sel = document.getElementById('rptSupplier');
+  if (!sel) return;
+  const suppliers = [...new Set(DB.incomingGoods.map(i => (i.supplier||'').trim()).filter(Boolean))].sort();
+  const curVal = sel.value;
+  sel.innerHTML = '<option value="">-- Semua Pemasok --</option>' +
+    suppliers.map(s => `<option value="${s}"${curVal===s?' selected':''}>${s}</option>`).join('');
+}
+
+function onRptTypeChange() {
+  const type = document.getElementById('rptType').value;
+  const salesGroup    = document.getElementById('rptSalesGroup');
+  const buyerGroup    = document.getElementById('rptBuyerGroup');
+  const supplierGroup = document.getElementById('rptSupplierGroup');
+  const dashGroup     = document.getElementById('rptDashboardGroup');
+  const btnCsv        = document.getElementById('btnDlCsv');
+  const btnExcel      = document.getElementById('btnDlExcel');
+  const btnPdf        = document.getElementById('btnDlPdf');
+  const btnDash       = document.getElementById('btnDlDashboard');
+
+  // Sales & Buyer: only for outgoing
+  if (type === 'outgoing') {
+    salesGroup.style.display = '';
+    buyerGroup.style.display = '';
+    populateRptSales();
+    populateRptBuyer();
+  } else {
+    salesGroup.style.display = 'none';
+    buyerGroup.style.display = 'none';
+  }
+
+  // Supplier: for incoming or all (not outgoing, not dashboard)
+  if (type === 'outgoing' || type === 'dashboard') {
+    supplierGroup.style.display = 'none';
+  } else {
+    supplierGroup.style.display = '';
+    populateRptSupplier();
+  }
+
+  if (type === 'dashboard') {
+    dashGroup.style.display = '';
+    btnCsv.style.display    = 'none';
+    btnExcel.style.display  = 'none';
+    btnPdf.style.display    = 'none';
+    btnDash.style.display   = '';
+  } else {
+    dashGroup.style.display = 'none';
+    btnCsv.style.display    = '';
+    btnExcel.style.display  = '';
+    btnPdf.style.display    = '';
+    btnDash.style.display   = 'none';
+  }
+
+  renderReport();
+}
 
 function onRptOwnerChange() {
   const owner = document.getElementById('rptOwner').value;
@@ -1644,26 +1860,69 @@ function renderReport() {
   const type  = document.getElementById('rptType').value;
   const month = document.getElementById('rptMonth').value;
   const year  = document.getElementById('rptYear').value;
+  const sales    = (document.getElementById('rptSales') && type === 'outgoing') ? document.getElementById('rptSales').value : '';
+  const buyer    = (document.getElementById('rptBuyer') && type === 'outgoing') ? document.getElementById('rptBuyer').value : '';
+  const supplier = (document.getElementById('rptSupplier') && type !== 'outgoing' && type !== 'dashboard') ? document.getElementById('rptSupplier').value : '';
+
+  if (type === 'dashboard') {
+    document.getElementById('reportTBody').innerHTML = '<tr><td colspan="10" style="text-align:center;color:#64748b;padding:24px;">Pilih periode lalu klik <strong>Download Dashboard</strong></td></tr>';
+    const countEl = document.getElementById('rptCount');
+    if (countEl) countEl.textContent = '';
+    reportData = [];
+    return;
+  }
+
+  // Helper: get sisa stok for a specific item+batch+owner
+  function getSisaStok(owner, itemName, batchLot) {
+    const totalIn  = DB.incomingGoods.filter(i => i.owner===owner && i.itemName===itemName && (i.batchLot||'-')===batchLot).reduce((s,i)=>s+(+i.quantity||0),0);
+    const totalOut = DB.outgoingGoods.filter(o => o.owner===owner && o.itemName===itemName && (o.batchLot||'-')===batchLot).reduce((s,o)=>s+(+o.quantityOut||0),0);
+    return totalIn - totalOut;
+  }
+
+  // Helper: get expired date for a specific item+batch+owner
+  function getExpiredDate(owner, itemName, batchLot) {
+    const inc = DB.incomingGoods.find(i => i.owner===owner && i.itemName===itemName && (i.batchLot||'-')===batchLot && i.expiredDate);
+    return inc ? inc.expiredDate : '';
+  }
+
   let rows = [];
   if (type !== 'outgoing') {
     DB.incomingGoods
-      .filter(i => (!owner||i.owner===owner) && (!item||i.itemName===item) && filterByMonthYear(i.date, month, year))
-      .forEach(i => rows.push({
-        date: i.date, owner: i.owner, tipe: 'Masuk',
-        itemName: i.itemName, batchLot: i.batchLot||'-',
-        qty: i.quantity, unit: i.unit,
-        ket: `Supplier: ${i.supplier||'-'} | Petugas: ${i.officer||'-'}`
-      }));
+      .filter(i => (!owner||i.owner===owner) && (!item||i.itemName===item) &&
+                   (!supplier||(i.supplier||'').trim()===supplier) &&
+                   filterByMonthYear(i.date, month, year))
+      .forEach(i => {
+        const bl = i.batchLot||'-';
+        rows.push({
+          date: i.date, owner: i.owner, tipe: 'Masuk',
+          itemName: i.itemName, batchLot: bl,
+          qty: i.quantity, unit: i.unit,
+          expiredDate: i.expiredDate || '',
+          sisaStok: getSisaStok(i.owner, i.itemName, bl),
+          ket: `Supplier: ${i.supplier||'-'} | Petugas: ${i.officer||'-'}`
+        });
+      });
   }
   if (type !== 'incoming') {
     DB.outgoingGoods
-      .filter(o => (!owner||o.owner===owner) && (!item||o.itemName===item) && filterByMonthYear(o.shipmentDate, month, year))
-      .forEach(o => rows.push({
-        date: o.shipmentDate, owner: o.owner, tipe: 'Keluar',
-        itemName: o.itemName, batchLot: o.batchLot||'-',
-        qty: o.quantityOut, unit: o.unit,
-        ket: `Tujuan: ${o.destination||'-'} | Sales: ${o.salesName||'-'}`
-      }));
+      .filter(o =>
+        (!owner||o.owner===owner) &&
+        (!item||o.itemName===item) &&
+        (!sales||(o.salesName||'').trim()===sales) &&
+        (!buyer||(o.destination||'').trim()===buyer) &&
+        filterByMonthYear(o.shipmentDate, month, year)
+      )
+      .forEach(o => {
+        const bl = o.batchLot||'-';
+        rows.push({
+          date: o.shipmentDate, owner: o.owner, tipe: 'Keluar',
+          itemName: o.itemName, batchLot: bl,
+          qty: o.quantityOut, unit: o.unit,
+          expiredDate: getExpiredDate(o.owner, o.itemName, bl),
+          sisaStok: getSisaStok(o.owner, o.itemName, bl),
+          ket: `Tujuan: ${o.destination||'-'} | Sales: ${o.salesName||'-'}`
+        });
+      });
   }
   rows.sort((a,b) => new Date(b.date||0) - new Date(a.date||0));
   reportData = rows;
@@ -1673,19 +1932,138 @@ function renderReport() {
   if (countEl) countEl.textContent = rows.length ? `${rows.length} data ditemukan` : '';
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;">Tidak ada data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:#94a3b8;padding:24px;">Tidak ada data</td></tr>';
     return;
   }
-  tbody.innerHTML = rows.map(r => `<tr>
-    <td>${fmtDate(r.date)}</td>
-    <td style="font-size:12px;">${r.owner}</td>
-    <td><span class="badge ${r.tipe==='Masuk'?'badge-approved':'badge-pending'}">${r.tipe}</span></td>
-    <td>${r.itemName}</td>
-    <td style="font-family:monospace;font-size:12px;">${r.batchLot}</td>
-    <td style="font-weight:600;">${r.qty}</td>
-    <td>${r.unit}</td>
-    <td style="font-size:11px;color:#64748b;">${r.ket}</td>
-  </tr>`).join('');
+
+  tbody.innerHTML = rows.map(r => {
+    // Expired styling
+    let expColor = '#64748b', expText = r.expiredDate ? fmtDate(r.expiredDate) : '-';
+    if (r.expiredDate) {
+      const diff = Math.ceil((new Date(r.expiredDate) - new Date()) / (1000*60*60*24));
+      if (diff < 0)        expColor = '#dc2626';
+      else if (diff <= 30) expColor = '#d97706';
+      else if (diff <= 90) expColor = '#ea580c';
+      else                 expColor = '#059669';
+    }
+    // Sisa stok styling
+    const sisaColor = r.sisaStok <= 0 ? '#dc2626' : r.sisaStok < 10 ? '#d97706' : '#059669';
+    const sisaBg    = r.sisaStok <= 0 ? '#fee2e2'  : r.sisaStok < 10 ? '#fef3c7'  : '#d1fae5';
+    return `<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td style="font-size:12px;">${r.owner}</td>
+      <td><span class="badge ${r.tipe==='Masuk'?'badge-approved':'badge-pending'}">${r.tipe}</span></td>
+      <td>${r.itemName}</td>
+      <td style="font-family:monospace;font-size:12px;">${r.batchLot}</td>
+      <td style="font-weight:600;">${r.qty}</td>
+      <td>${r.unit}</td>
+      <td style="font-size:12px;font-weight:600;color:${expColor};">${expText}</td>
+      <td style="text-align:center;"><span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;background:${sisaBg};color:${sisaColor};">${r.sisaStok}</span></td>
+      <td style="font-size:11px;color:#64748b;">${r.ket}</td>
+    </tr>`;
+  }).join('');
+}
+
+function downloadDashboard() {
+  const period   = document.getElementById('rptDashboardPeriod').value;
+  const owner    = document.getElementById('rptOwner').value || 'Semua';
+  const month    = document.getElementById('rptMonth').value;
+  const year     = document.getElementById('rptYear').value;
+  const dateStr  = new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
+  const periodLabel = period === 'monthly' ? 'Per Bulan' : 'Per Tahun';
+
+  // Filter activity log entries by period
+  const getKey = (timeStr) => {
+    // activityLog stores time as locale time string; use approximate match from stored timestamp
+    return timeStr;
+  };
+
+  // Build activity log per period — use full log (all in-session)
+  // Group by period key using stored timestamp (we'll tag entries with a timestamp field)
+  const entries = activityLog.filter(a => {
+    if (!a.ts) return true; // always show entries without timestamp
+    const d = new Date(a.ts);
+    if (isNaN(d)) return true;
+    if (month && d.getMonth()+1 !== +month) return false;
+    if (year  && d.getFullYear() !== +year)  return false;
+    return true;
+  });
+
+  // Count by category
+  const cats = { Login:0, 'Tambah Data':0, 'Edit Data':0, 'Hapus Data':0, 'Approval':0, 'Download':0, 'Lainnya':0 };
+  entries.forEach(a => {
+    const act = a.action.toLowerCase();
+    if (act.includes('login') || act.includes('ganti akun')) cats['Login']++;
+    else if (act.includes('tambah') || act.includes('submit')) cats['Tambah Data']++;
+    else if (act.includes('update') || act.includes('edit') || act.includes('perbarui')) cats['Edit Data']++;
+    else if (act.includes('hapus') || act.includes('delete')) cats['Hapus Data']++;
+    else if (act.includes('setujui') || act.includes('approv')) cats['Approval']++;
+    else if (act.includes('download') || act.includes('unduh') || act.includes('csv') || act.includes('excel') || act.includes('pdf')) cats['Download']++;
+    else cats['Lainnya']++;
+  });
+
+  const statCards = Object.entries(cats).map(([k,v]) => `
+    <div style="flex:1;min-width:100px;border:1px solid #e2e8f0;padding:10px;border-radius:6px;text-align:center;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;">${k}</div>
+      <div style="font-size:22px;font-weight:700;color:#1e293b;">${v}</div>
+    </div>`).join('');
+
+  const rows = entries.map((a,i) => {
+    const act = a.action.toLowerCase();
+    let badge = '#64748b', badgeBg = '#f1f5f9', label = 'Lainnya';
+    if (act.includes('login') || act.includes('ganti akun'))   { badge='#1d4ed8'; badgeBg='#dbeafe'; label='Login'; }
+    else if (act.includes('tambah') || act.includes('submit')) { badge='#059669'; badgeBg='#d1fae5'; label='Tambah'; }
+    else if (act.includes('update') || act.includes('edit'))   { badge='#d97706'; badgeBg='#fef3c7'; label='Edit'; }
+    else if (act.includes('hapus') || act.includes('delete'))  { badge='#dc2626'; badgeBg='#fee2e2'; label='Hapus'; }
+    else if (act.includes('setujui') || act.includes('approv')){ badge='#7c3aed'; badgeBg='#ede9fe'; label='Approval'; }
+    else if (act.includes('download') || act.includes('unduh') || act.includes('csv') || act.includes('pdf')){ badge='#0891b2'; badgeBg='#cffafe'; label='Download'; }
+    return `<tr style="background:${i%2===0?'#f8fafc':'white'};">
+      <td style="padding:6px 8px;">${a.ts ? new Date(a.ts).toLocaleString('id-ID') : a.time}</td>
+      <td style="padding:6px 8px;"><span style="padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;background:${badgeBg};color:${badge};">${label}</span></td>
+      <td style="padding:6px 8px;font-weight:600;">${a.action}</td>
+      <td style="padding:6px 8px;color:#64748b;">${a.details}</td>
+      <td style="padding:6px 8px;font-weight:600;">${a.user}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" style="padding:20px;text-align:center;color:#94a3b8;">Belum ada aktivitas tercatat</td></tr>`;
+
+  const filterInfo = [
+    owner !== 'Semua' ? `Pemilik: ${owner}` : '',
+    month ? `Bulan: ${['','Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][+month]}` : '',
+    year  ? `Tahun: ${year}` : ''
+  ].filter(Boolean).join(' | ') || 'Semua Periode';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>Dashboard Aktivitas ${periodLabel}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:Arial,sans-serif;font-size:12px;color:#1e293b;padding:24px;background:#f8fafc;}
+      h1{font-size:18px;font-weight:700;margin-bottom:4px;}
+      .sub{font-size:12px;color:#64748b;margin-bottom:6px;}
+      .stats{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;}
+      table{width:100%;border-collapse:collapse;margin-top:16px;}
+      thead th{background:#1e293b;color:white;padding:8px 8px;text-align:left;font-size:10px;}
+      tbody tr:nth-child(even){background:#f1f5f9;}
+      @media print{body{padding:10px;}button{display:none;}}
+    </style>
+  </head><body>
+    <h1>📊 Laporan Aktivitas User</h1>
+    <div class="sub">${filterInfo} &nbsp;|&nbsp; Dicetak: ${dateStr}</div>
+    <div class="stats">${statCards}</div>
+    <table>
+      <thead><tr><th>Waktu</th><th>Kategori</th><th>Aktivitas</th><th>Detail</th><th>User</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <br>
+    <button onclick="window.print()" style="padding:8px 16px;background:#1e293b;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;">🖨️ Cetak / Simpan PDF</button>
+  </body></html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(html);
+  win.document.close();
+
+  // Log this download action
+  addActivity('Download Dashboard Aktivitas', `Filter: ${filterInfo}`);
+  toast('Dashboard aktivitas dibuka di tab baru', 'success');
 }
 
 function filterByMonthYear(dateStr, month, year) {
@@ -1748,11 +2126,23 @@ function previewReport(format) {
             <th style="padding:8px 10px;text-align:left;">Lot/Batch</th>
             <th style="padding:8px 10px;text-align:right;">Qty</th>
             <th style="padding:8px 10px;text-align:left;">Satuan</th>
+            <th style="padding:8px 10px;text-align:left;">Kadaluarsa</th>
+            <th style="padding:8px 10px;text-align:right;">Sisa Stok</th>
             <th style="padding:8px 10px;text-align:left;">Keterangan</th>
           </tr>
         </thead>
         <tbody>
-          ${reportData.map((r,i) => `
+          ${reportData.map((r,i) => {
+            let expColor = '#64748b', expText = r.expiredDate ? fmtDate(r.expiredDate) : '-';
+            if (r.expiredDate) {
+              const diff = Math.ceil((new Date(r.expiredDate) - new Date()) / (1000*60*60*24));
+              if (diff < 0)        expColor = '#dc2626';
+              else if (diff <= 30) expColor = '#d97706';
+              else if (diff <= 90) expColor = '#ea580c';
+              else                 expColor = '#059669';
+            }
+            const sisaColor = r.sisaStok <= 0 ? '#dc2626' : r.sisaStok < 10 ? '#d97706' : '#059669';
+            return `
             <tr style="background:${i%2===0?'#f8fafc':'white'};border-bottom:1px solid #e2e8f0;">
               <td style="padding:7px 10px;">${fmtDate(r.date)}</td>
               <td style="padding:7px 10px;font-size:11px;">${r.owner}</td>
@@ -1761,8 +2151,11 @@ function previewReport(format) {
               <td style="padding:7px 10px;font-family:monospace;">${r.batchLot}</td>
               <td style="padding:7px 10px;text-align:right;font-weight:600;">${r.qty}</td>
               <td style="padding:7px 10px;">${r.unit}</td>
+              <td style="padding:7px 10px;font-weight:600;color:${expColor};">${expText}</td>
+              <td style="padding:7px 10px;text-align:right;font-weight:700;color:${sisaColor};">${r.sisaStok}</td>
               <td style="padding:7px 10px;font-size:11px;color:#64748b;">${r.ket}</td>
-            </tr>`).join('')}
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>`;
@@ -1798,9 +2191,10 @@ function previewReport(format) {
 }
 
 function doDownloadCSV() {
-  const header = ['Tanggal','Pemilik','Tipe','Nama Barang','Lot/Batch','Qty','Satuan','Keterangan'];
+  const header = ['Tanggal','Pemilik','Tipe','Nama Barang','Lot/Batch','Qty','Satuan','Kadaluarsa','Sisa Stok','Keterangan'];
   const rows   = reportData.map(r =>
-    [fmtDate(r.date), r.owner, r.tipe, r.itemName, r.batchLot, r.qty, r.unit, r.ket]
+    [fmtDate(r.date), r.owner, r.tipe, r.itemName, r.batchLot, r.qty, r.unit,
+     r.expiredDate ? fmtDate(r.expiredDate) : '-', r.sisaStok, r.ket]
     .map(v => `"${String(v).replace(/"/g,'""')}"`)
     .join(',')
   );
@@ -1808,12 +2202,13 @@ function doDownloadCSV() {
   const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
   triggerDownload(URL.createObjectURL(blob), `Laporan-${dateSuffix()}.csv`);
   toast('CSV berhasil diunduh', 'success');
+  addActivity('Download Laporan CSV', `${reportData.length} baris data`);
   closeModal('previewModal');
 }
 
 function doDownloadExcel() {
   // Build Excel XML (SpreadsheetML) — no library needed
-  const header = ['Tanggal','Pemilik','Tipe','Nama Barang','Lot/Batch','Qty','Satuan','Keterangan'];
+  const header = ['Tanggal','Pemilik','Tipe','Nama Barang','Lot/Batch','Qty','Satuan','Kadaluarsa','Sisa Stok','Keterangan'];
   const owner  = document.getElementById('rptOwner').value || 'Semua Pemilik';
   const month  = document.getElementById('rptMonth').options[document.getElementById('rptMonth').selectedIndex].text;
   const year   = document.getElementById('rptYear').value || 'Semua Tahun';
@@ -1824,9 +2219,11 @@ function doDownloadExcel() {
   };
 
   const dataRows = reportData.map(r =>
-    `<Row>${[fmtDate(r.date),r.owner,r.tipe,r.itemName,r.batchLot,r.qty,r.unit,r.ket].map(v=>cell(v)).join('')}</Row>`
+    `<Row>${[fmtDate(r.date),r.owner,r.tipe,r.itemName,r.batchLot,r.qty,r.unit,
+             r.expiredDate ? fmtDate(r.expiredDate) : '-', r.sisaStok, r.ket].map(v=>cell(v)).join('')}</Row>`
   ).join('\n');
 
+  const colCount = header.length - 1; // MergeAcross is 0-based count of extra cols
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -1837,8 +2234,8 @@ function doDownloadExcel() {
   </Styles>
   <Worksheet ss:Name="Laporan">
     <Table>
-      <Row><Cell ss:MergeAcross="7" ss:StyleID="1"><Data ss:Type="String">LAPORAN MANAJEMEN BARANG - ${owner} - ${month} ${year}</Data></Cell></Row>
-      <Row><Cell ss:MergeAcross="7"><Data ss:Type="String">Dicetak: ${new Date().toLocaleDateString('id-ID')}</Data></Cell></Row>
+      <Row><Cell ss:MergeAcross="${colCount}" ss:StyleID="1"><Data ss:Type="String">LAPORAN MANAJEMEN BARANG - ${owner} - ${month} ${year}</Data></Cell></Row>
+      <Row><Cell ss:MergeAcross="${colCount}"><Data ss:Type="String">Dicetak: ${new Date().toLocaleDateString('id-ID')}</Data></Cell></Row>
       <Row/>
       <Row>${header.map(h=>`<Cell ss:StyleID="2"><Data ss:Type="String">${h}</Data></Cell>`).join('')}</Row>
       ${dataRows}
@@ -1849,6 +2246,7 @@ function doDownloadExcel() {
   const blob = new Blob([xml], { type:'application/vnd.ms-excel;charset=utf-8;' });
   triggerDownload(URL.createObjectURL(blob), `Laporan-${dateSuffix()}.xls`);
   toast('Excel berhasil diunduh', 'success');
+  addActivity('Download Laporan Excel', `${reportData.length} baris data`);
   closeModal('previewModal');
 }
 
@@ -1883,6 +2281,7 @@ function doDownloadPDF() {
   </body></html>`);
   printWin.document.close();
   toast('Jendela print dibuka', 'success');
+  addActivity('Download Laporan PDF', `${reportData.length} baris data`);
   closeModal('previewModal');
 }
 
